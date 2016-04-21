@@ -14,9 +14,9 @@
 #import "RCTEventDispatcher.h"
 #import "RCTUtils.h"
 
-NSString *const RNVoipRemoteNotificationsRegistered = @"voipRemoteNotificationsRegistered";
-NSString *const RNVoipLocalNotificationReceived = @"voipLocalNotificationReceived";
-NSString *const RNVoipRemoteNotificationReceived = @"voipRemoteNotificationReceived";
+NSString *const RNVoipRemoteNotificationsRegistered = @"VoipRemoteNotificationsRegistered";
+NSString *const RNVoipLocalNotificationReceived = @"VoipLocalNotificationReceived";
+NSString *const RNVoipRemoteNotificationReceived = @"VoipRemoteNotificationReceived";
 
 @implementation RCTConvert (UILocalNotification)
 
