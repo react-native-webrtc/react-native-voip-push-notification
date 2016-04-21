@@ -13,7 +13,7 @@
 @interface RNVoipPushNotificationManager : NSObject <RCTBridgeModule>
 
 - (void)voipRegistration;
-- (void)registerUserNotification;
+- (void)registerUserNotification:(NSDictionary *)permissions;
 - (NSDictionary *)checkPermissions;
 + (void)didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type;
 + (void)didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type;

@@ -64,7 +64,7 @@ RCT_EXPORT_MODULE();
                                                object:nil];
 }
 
-- (void)registerUserNotification(NSDictionary *)permissions
+- (void)registerUserNotification:(NSDictionary *)permissions
 {
     UIUserNotificationType types = UIUserNotificationTypeNone;
     if (permissions) {
@@ -156,7 +156,7 @@ RCT_EXPORT_MODULE();
                                                 body:notification.userInfo];
 }
 
-RCT_EXPORT_METHOD(requestPermissions(NSDictionary *)permissions)
+RCT_EXPORT_METHOD(requestPermissions:(NSDictionary *)permissions)
 {
     if (RCTRunningInAppExtension()) {
         return;
