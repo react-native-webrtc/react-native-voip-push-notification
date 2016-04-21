@@ -21,6 +21,12 @@ npm install --save react-native-voip-push-notification
 
 The iOS version should be >= 8.0 since we are using [PushKit][1].
 
+#### Enable VoIP Push Notification and Get VoIP Certificate
+
+Please refer to [VoIP Best Practices][2].
+
+**Note**: Do NOT follow the `Configure VoIP Push Notification` part from the above link, use the instruction below instead.
+
 #### AppDelegate.m Modification
 
 ```objective-c
