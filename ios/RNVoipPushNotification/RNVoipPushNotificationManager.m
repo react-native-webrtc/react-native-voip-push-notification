@@ -14,9 +14,28 @@
 #import "RCTEventDispatcher.h"
 #import "RCTUtils.h"
 
-NSString *const RNVoipRemoteNotificationsRegistered = @"VoipRemoteNotificationsRegistered";
-NSString *const RNVoipLocalNotificationReceived = @"VoipLocalNotificationReceived";
-NSString *const RNVoipRemoteNotificationReceived = @"VoipRemoteNotificationReceived";
+NSString *const RNVoipRemoteNotificationsRegistered = @"voipRemoteNotificationsRegistered";
+NSString *const RNVoipLocalNotificationReceived = @"voipLocalNotificationReceived";
+NSString *const RNVoipRemoteNotificationReceived = @"voipRemoteNotificationReceived";
+
+static NSString *RCTCurrentAppBackgroundState()
+{
+    static NSDictionary *states;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        states = @{
+            @(UIApplicationStateActive): @"active",
+            @(UIApplicationStateBackground): @"background",
+            @(UIApplicationStateInactive): @"inactive"
+        };
+    });
+
+    if (RCTRunningInAppExtension()) {
+        return @"extension";
+    }
+
+    return states[@(RCTSharedApplication().applicationState)] ? : @"unknown";
+}
 
 @implementation RCTConvert (UILocalNotification)
 
@@ -62,6 +81,13 @@ RCT_EXPORT_MODULE();
                                              selector:@selector(handleRemoteNotificationReceived:)
                                                  name:RNVoipRemoteNotificationReceived
                                                object:nil];
+}
+
+- (NSDictionary<NSString *, id> *)constantsToExport
+{
+    NSString *currentState = RCTCurrentAppBackgroundState();
+    NSLog(@"[RNVoipPushNotificationManager] constantsToExport currentState = %@", currentState);
+    return @{@"wakeupByPush": (currentState == @"background") ? @"true" : @"false"};
 }
 
 - (void)registerUserNotification:(NSDictionary *)permissions
