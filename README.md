@@ -113,6 +113,24 @@ class MyComponent extends React.Component {
       // register your VoIP client, show local notification, etc.
       // e.g.
       this.doRegister();
+      
+      /* there is a boolean constant exported by this module called
+       * 
+       * wakeupByPush
+       * 
+       * you can use this constant to distinguish the app is launched
+       * by VoIP push notification or not
+       *
+       * e.g.
+       */
+       if (VoipPushNotification.wakeupByPush) {
+         // do something...
+
+         // remember to set this static variable to false
+         // since the constant are exported only at initialization time
+         // and it will keep the same in the whole app
+         VoipPushNotification.wakeupByPush = false;
+       }
 
       /**
        * Local Notification Payload
