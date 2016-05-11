@@ -16,6 +16,8 @@ var DEVICE_LOCAL_NOTIF_EVENT = 'voipLocalNotificationReceived';
 
 export default class RNVoipPushNotification {
 
+    static wakeupByPush = (RNVoipPushNotificationManager.wakeupByPush === 'true');
+
     /**
      * Schedules the localNotification for immediate presentation.
      *
