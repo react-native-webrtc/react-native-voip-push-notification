@@ -1,4 +1,8 @@
 # React Native VoIP Push Notification
+
+[![npm version](https://badge.fury.io/js/react-native-voip-push-notification.svg)](https://badge.fury.io/js/react-native-voip-push-notification)
+[![npm downloads](https://img.shields.io/npm/dm/react-native-voip-push-notification.svg?maxAge=2592000)](https://img.shields.io/npm/dm/react-native-voip-push-notification.svg?maxAge=2592000)
+
 React Native VoIP Push Notification - Currently iOS >= 8.0 only
 
 ## Motivation
