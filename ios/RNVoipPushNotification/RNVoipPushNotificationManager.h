@@ -17,5 +17,6 @@
 - (NSDictionary *)checkPermissions;
 + (void)didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type;
 + (void)didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type;
++ (NSString *)getCurrentAppBackgroundState;
 
 @end

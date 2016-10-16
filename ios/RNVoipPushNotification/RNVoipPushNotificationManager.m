@@ -138,6 +138,11 @@ RCT_EXPORT_MODULE();
   
 }
 
++ (NSString *)getCurrentAppBackgroundState
+{
+    return RCTCurrentAppBackgroundState();
+}
+
 + (void)didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type
 {
     NSLog(@"[RNVoipPushNotificationManager] didUpdatePushCredentials credentials.token = %@, type = %@", credentials.token, type);
