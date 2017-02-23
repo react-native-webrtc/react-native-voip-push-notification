@@ -15,6 +15,10 @@ To understand the benefits of **Voip Push Notification**, please see [VoIP Best 
 
 **Note 2** This module is inspired by [PushNotificationIOS][6] and [React Native Push Notification][7]
 
+## Version
+
+If you're using React Native >= 0.40, make sure to use react-native-voip-push-notification >= 1.1.0
+
 ## Installation
 
 ```bash
