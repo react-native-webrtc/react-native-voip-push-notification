@@ -45,6 +45,7 @@ static NSString *RCTCurrentAppBackgroundState()
     UILocalNotification *notification = [UILocalNotification new];
     notification.fireDate = [RCTConvert NSDate:details[@"fireDate"]] ?: [NSDate date];
     notification.alertBody = [RCTConvert NSString:details[@"alertBody"]];
+    notification.alertTitle = [RCTConvert NSString:details[@"alertTitle"]];
     notification.alertAction = [RCTConvert NSString:details[@"alertAction"]];
     notification.soundName = [RCTConvert NSString:details[@"soundName"]] ?: UILocalNotificationDefaultSoundName;
     notification.userInfo = [RCTConvert NSDictionary:details[@"userInfo"]];
