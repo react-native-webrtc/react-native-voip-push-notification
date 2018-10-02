@@ -119,12 +119,14 @@ RCT_EXPORT_MODULE();
     NSLog(@"[RNVoipPushNotificationManager] voipRegistration");
 
     dispatch_queue_t mainQueue = dispatch_get_main_queue();
-    // Create a push registry object
-    PKPushRegistry * voipRegistry = [[PKPushRegistry alloc] initWithQueue: mainQueue];
-    // Set the registry's delegate to AppDelegate
-    voipRegistry.delegate = (RNVoipPushNotificationManager *)RCTSharedApplication().delegate;
-    // Set the push type to VoIP
-    voipRegistry.desiredPushTypes = [NSSet setWithObject:PKPushTypeVoIP];
+    dispatch_async(mainQueue, ^{
+      // Create a push registry object
+      PKPushRegistry * voipRegistry = [[PKPushRegistry alloc] initWithQueue: mainQueue];
+      // Set the registry's delegate to AppDelegate
+      voipRegistry.delegate = (RNVoipPushNotificationManager *)RCTSharedApplication().delegate;
+      // Set the push type to VoIP
+      voipRegistry.desiredPushTypes = [NSSet setWithObject:PKPushTypeVoIP];
+    });
 }
 
 - (NSDictionary *)checkPermissions
@@ -193,8 +195,10 @@ RCT_EXPORT_METHOD(requestPermissions:(NSDictionary *)permissions)
     if (RCTRunningInAppExtension()) {
         return;
     }
+  dispatch_async(dispatch_get_main_queue(), ^{
     [self registerUserNotification:permissions];
     [self voipRegistration];
+  });
 }
 
 RCT_EXPORT_METHOD(checkPermissions:(RCTResponseSenderBlock)callback)
