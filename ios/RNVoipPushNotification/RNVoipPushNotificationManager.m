@@ -216,4 +216,9 @@ RCT_EXPORT_METHOD(presentLocalNotification:(UILocalNotification *)notification)
     [RCTSharedApplication() presentLocalNotificationNow:notification];
 }
 
++ (BOOL)requiresMainQueueSetup
+{
+    return YES;
+}
+
 @end
