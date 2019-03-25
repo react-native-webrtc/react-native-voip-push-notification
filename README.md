@@ -161,9 +161,9 @@ class MyComponent extends React.Component {
 
 ```
 
-## Contributing
+## Original Author:
 
-Any pull request, issue report and suggestion are highly welcome!
+[![ianlin](https://avatars1.githubusercontent.com/u/914406?s=48)](https://github.com/ianlin)
 
 ## License
 
