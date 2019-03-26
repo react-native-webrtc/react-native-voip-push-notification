@@ -213,7 +213,9 @@ RCT_EXPORT_METHOD(checkPermissions:(RCTResponseSenderBlock)callback)
 
 RCT_EXPORT_METHOD(presentLocalNotification:(UILocalNotification *)notification)
 {
-    [RCTSharedApplication() presentLocalNotificationNow:notification];
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [RCTSharedApplication() presentLocalNotificationNow:notification];
+    });
 }
 
 + (BOOL)requiresMainQueueSetup
