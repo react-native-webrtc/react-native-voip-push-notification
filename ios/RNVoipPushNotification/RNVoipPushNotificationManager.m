@@ -197,8 +197,17 @@ RCT_EXPORT_METHOD(requestPermissions:(NSDictionary *)permissions)
     }
   dispatch_async(dispatch_get_main_queue(), ^{
     [self registerUserNotification:permissions];
-    [self voipRegistration];
   });
+}
+
+RCT_EXPORT_METHOD(registerVoipToken)
+{
+    if (RCTRunningInAppExtension()) {
+        return;
+    }
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self voipRegistration];
+    });
 }
 
 RCT_EXPORT_METHOD(checkPermissions:(RCTResponseSenderBlock)callback)
