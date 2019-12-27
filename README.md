@@ -80,6 +80,9 @@ Please refer to [VoIP Best Practices][2].
 
 #### Add RNVoipPushNotification
 
+On RN60+, auto linking with pod file should work. Or you can try below:
+
+
 ##### Option 1: Use [rnpm][3]
 
 ```bash
@@ -111,7 +114,8 @@ class MyComponent extends React.Component {
 ...
 
   componentWillMount() { // or anywhere which is most comfortable and appropriate for you
-    VoipPushNotification.requestPermissions(); // required
+    VoipPushNotification.requestPermissions(); // --- optional, you can use another library to request permissions
+    VoipPushNotification.registerVoipToken(); // --- required
   
     VoipPushNotification.addEventListener('register', (token) => {
       // send token to your apn provider server
