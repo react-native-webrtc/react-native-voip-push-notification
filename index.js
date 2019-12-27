@@ -126,6 +126,16 @@ export default class RNVoipPushNotification {
     }
 
     /**
+     * Register for voip token
+     *
+     * @static
+     * @memberof RNVoipPushNotification
+     */
+    static registerVoipToken() {
+        RNVoipPushNotificationManager.registerVoipToken();
+    }
+
+    /**
      * You will never need to instantiate `RNVoipPushNotification` yourself.
      * Listening to the `notification` event and invoking
      * `popInitialNotification` is sufficient
