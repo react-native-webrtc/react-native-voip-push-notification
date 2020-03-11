@@ -48,9 +48,9 @@ Do-Not-Disturb / check if Ghost-Call / using some sip libs to register or waitin
 Staff from Apple gives some advisions for these issues in the below discussion:
 https://forums.developer.apple.com/thread/117939
 
-#### you may need to change your server for APN voip push:
+#### You may need to change your server for APN voip push:
 
-Especially `apns-push-type` value should be 'voip' for ios 13
+Especially `apns-push-type` value should be `'voip'` for iOS 13  
 And be aware of `apns-expiration`value, adjust according to your call logics  
   
 https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/sending_notification_requests_to_apns
@@ -68,6 +68,10 @@ The iOS version should be >= 8.0 since we are using [PushKit][1].
 #### Enable VoIP Push Notification and Get VoIP Certificate
 
 Please refer to [VoIP Best Practices][2].
+
+Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
+* `Background Modes` -> `Voice over IP` enabled
+* `+Capability` -> `Push Notifications`
 
 #### AppDelegate.m Modification
 
@@ -89,13 +93,13 @@ Please refer to [VoIP Best Practices][2].
 
 /* Add PushKit delegate method */
 
-// Handle updated push credentials
+// --- Handle updated push credentials
 - (void)pushRegistry:(PKPushRegistry *)registry didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type {
   // Register VoIP push token (a property of PKPushCredentials) with server
   [RNVoipPushNotificationManager didUpdatePushCredentials:credentials forType:(NSString *)type];
 }
 
-// Handle incoming pushes (for ios <= 10)
+// --- Handle incoming pushes (for ios <= 10)
 - (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type {
   [RNVoipPushNotificationManager didReceiveIncomingPushWithPayload:payload forType:(NSString *)type];
 }
@@ -125,19 +129,19 @@ Please refer to [VoIP Best Practices][2].
 
 ```
 
-## Linking
+## Linking:
 
 On RN60+, auto linking with pod file should work.  
 Or you can try below:
 
 ## Linking Manually:
 
-### Add PushKit Framework
+### Add PushKit Framework:
 
 - In your Xcode project, select `Build Phases` --> `Link Binary With Libraries`
 - Add `PushKit.framework`
 
-### Add RNVoipPushNotification
+### Add RNVoipPushNotification:
 
 #### Option 1: Use [rnpm][3]
 
@@ -155,7 +159,7 @@ rnpm link react-native-voip-push-notification
 3. Select `<your_xcode_project>` --> `Build Settings`
   - In `Header Search Paths`, add `$(SRCROOT)/../node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification` with `recursive`
 
-## Usage
+## Usage:
 
 ```javascript
 
