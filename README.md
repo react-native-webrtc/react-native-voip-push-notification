@@ -20,23 +20,54 @@ To understand the benefits of **Voip Push Notification**, please see [VoIP Best 
 * 1.1.0+ ( RN 40+ )
 * 2.0.0+ (RN 60+)
 
-If you're using React Native >= 0.40, make sure to use react-native-voip-push-notification >= 1.1.0
+## !!IMPORTANT NOTE!!
+
+#### You should use this module with CallKit:
+
+Now Apple forced us to invoke CallKit ASAP when we receive voip push on iOS 13 and later, so you should check [react-native-callkeep](https://github.com/react-native-webrtc/react-native-callkeep) as well.
+
+#### Please read below links carefully:
+
+https://developer.apple.com/documentation/pushkit/pkpushregistrydelegate/2875784-pushregistry
+
+> When linking against the iOS 13 SDK or later, your implementation of this method must report notifications of type voIP to the CallKit framework by calling the reportNewIncomingCall(with:update:completion:) method
+>
+> On iOS 13.0 and later, if you fail to report a call to CallKit, the system will terminate your app.
+> 
+> Repeatedly failing to report calls may cause the system to stop delivering any more VoIP push notifications to your app.
+> 
+> If you want to initiate a VoIP call without using CallKit, register for push notifications using the UserNotifications framework instead of PushKit. For more information, see UserNotifications.
+
+#### Issue introduced in this change:
+
+When received VoipPush, we should present CallKit ASAP even before RN instance initialization.  
+  
+This breaks especially if you handled almost call behavior at js side, for example:  
+Do-Not-Disturb / check if Ghost-Call / using some sip libs to register or waiting invite...etc.  
+  
+Staff from Apple gives some advisions for these issues in the below discussion:
+https://forums.developer.apple.com/thread/117939
+
+#### you may need to change your server for APN voip push:
+
+Especially `apns-push-type` value should be 'voip' for ios 13
+And be aware of `apns-expiration`value, adjust according to your call logics  
+  
+https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/sending_notification_requests_to_apns
 
 ## Installation
 
 ```bash
 npm install --save react-native-voip-push-notification
+# --- if using pod
+cd ios/ && pod install
 ```
-
-### iOS
 
 The iOS version should be >= 8.0 since we are using [PushKit][1].
 
 #### Enable VoIP Push Notification and Get VoIP Certificate
 
 Please refer to [VoIP Best Practices][2].
-
-**Note**: Do NOT follow the `Configure VoIP Push Notification` part from the above link, use the instruction below instead.
 
 #### AppDelegate.m Modification
 
@@ -64,29 +95,51 @@ Please refer to [VoIP Best Practices][2].
   [RNVoipPushNotificationManager didUpdatePushCredentials:credentials forType:(NSString *)type];
 }
 
-// Handle incoming pushes
+// Handle incoming pushes (for ios <= 10)
 - (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type {
-  // Process the received push
   [RNVoipPushNotificationManager didReceiveIncomingPushWithPayload:payload forType:(NSString *)type];
 }
 
+// --- Handle incoming pushes (for ios >= 11)
+- (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type withCompletionHandler:(void (^)(void))completion {
+  
+  // --- Process the received push
+  [RNVoipPushNotificationManager didReceiveIncomingPushWithPayload:payload forType:(NSString *)type];
+
+  // --- NOTE: apple forced us to invoke callkit ASAP when we receive voip push
+  // --- see: react-native-callkeep
+  if (@available(iOS 13, *)) {
+    // --- Retrieve information from your voip push payload
+    NSString *uuid = payload.dictionaryPayload[@"uuid"];
+    NSString *callerName = [NSString stringWithFormat:@"%@ (Connecting...)", payload.dictionaryPayload[@"callerName"]];
+    NSString *handle = payload.dictionaryPayload[@"handle"];
+
+    [RNCallKeep reportNewIncomingCall:uuid handle:handle handleType:@"generic" hasVideo:false localizedCallerName:callerName fromPushKit: YES];
+  }
+  
+  completion();
+}
 ...
 
 @end
 
 ```
 
-#### Add PushKit Framework
+## Linking
+
+On RN60+, auto linking with pod file should work.  
+Or you can try below:
+
+## Linking Manually:
+
+### Add PushKit Framework
 
 - In your Xcode project, select `Build Phases` --> `Link Binary With Libraries`
 - Add `PushKit.framework`
 
-#### Add RNVoipPushNotification
+### Add RNVoipPushNotification
 
-On RN60+, auto linking with pod file should work. Or you can try below:
-
-
-##### Option 1: Use [rnpm][3]
+#### Option 1: Use [rnpm][3]
 
 ```bash
 rnpm link react-native-voip-push-notification
@@ -94,7 +147,7 @@ rnpm link react-native-voip-push-notification
 
 **Note**: If you're using rnpm link make sure the `Header Search Paths` is `recursive`. (In step 3 of manually linking)
 
-##### Option 2: Manually
+#### Option 2: Manually
 
 1. Drag `node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification.xcodeproj` under `<your_xcode_project>/Libraries`
 2. Select `<your_xcode_project>` --> `Build Phases` --> `Link Binary With Libraries`
@@ -116,34 +169,29 @@ class MyComponent extends React.Component {
 
 ...
 
-  componentWillMount() { // or anywhere which is most comfortable and appropriate for you
+  componentDidMount() { // or anywhere which is most comfortable and appropriate for you
     VoipPushNotification.requestPermissions(); // --- optional, you can use another library to request permissions
     VoipPushNotification.registerVoipToken(); // --- required
   
     VoipPushNotification.addEventListener('register', (token) => {
-      // send token to your apn provider server
+      // --- send token to your apn provider server
+    });
+
+    VoipPushNotification.addEventListener('localNotification', (notification) => {
+      // --- when user click local push
     });
 
     VoipPushNotification.addEventListener('notification', (notification) => {
-      // register your VoIP client, show local notification, etc.
-      // e.g.
-      this.doRegister();
+      // --- when receive remote voip push, register your VoIP client, show local notification ... etc
+      //this.doRegisterOrSomething();
       
-      /* there is a boolean constant exported by this module called
-       * 
-       * wakeupByPush
-       * 
-       * you can use this constant to distinguish the app is launched
-       * by VoIP push notification or not
-       *
-       * e.g.
-       */
+       // --- This  is a boolean constant exported by this module
+       // --- you can use this constant to distinguish the app is launched by VoIP push notification or not
        if (VoipPushNotification.wakeupByPush) {
-         // do something...
+         // this.doSomething()
 
-         // remember to set this static variable to false
-         // since the constant are exported only at initialization time
-         // and it will keep the same in the whole app
+         // --- remember to set this static variable back to false
+         // --- since the constant are exported only at initialization time, and it will keep the same in the whole app
          VoipPushNotification.wakeupByPush = false;
        }
 
@@ -161,7 +209,6 @@ class MyComponent extends React.Component {
       });
     });
   }
-
 ...
 
 }
