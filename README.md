@@ -127,15 +127,15 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 
   // --- NOTE: apple forced us to invoke callkit ASAP when we receive voip push
   // --- see: react-native-callkeep
-  if (@available(iOS 13, *)) {
-    // --- Retrieve information from your voip push payload
-    NSString *uuid = payload.dictionaryPayload[@"uuid"];
-    NSString *callerName = [NSString stringWithFormat:@"%@ (Connecting...)", payload.dictionaryPayload[@"callerName"]];
-    NSString *handle = payload.dictionaryPayload[@"handle"];
 
-    [RNCallKeep reportNewIncomingCall:uuid handle:handle handleType:@"generic" hasVideo:false localizedCallerName:callerName fromPushKit: YES];
-  }
-  
+  // --- Retrieve information from your voip push payload
+  NSString *uuid = payload.dictionaryPayload[@"uuid"];
+  NSString *callerName = [NSString stringWithFormat:@"%@ (Connecting...)", payload.dictionaryPayload[@"callerName"]];
+  NSString *handle = payload.dictionaryPayload[@"handle"];
+
+  // --- You should make sure to report to callkit BEFORE execute `completion()`
+  [RNCallKeep reportNewIncomingCall:uuid handle:handle handleType:@"generic" hasVideo:false localizedCallerName:callerName fromPushKit: YES];
+    
   completion();
 }
 ...
