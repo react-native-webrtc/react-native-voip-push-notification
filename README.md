@@ -55,6 +55,21 @@ And be aware of `apns-expiration`value, adjust according to your call logics
   
 https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/sending_notification_requests_to_apns
 
+#### About Silent Push ( Background Push ):
+
+VoIP pushes were intended to specifically support incoming call notifications and nothing else.   
+
+If you were using voip push to do things other than `nootify incoming call`, such as: `cancel call` / `background updates`...etc,  You should change to use [Notification Service Extension](https://developer.apple.com/documentation/usernotifications/unnotificationserviceextension), it contains different kind of pushs.
+
+To  use`Background Push` to [Pushing Background Updates to Your App](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/pushing_background_updates_to_your_app),
+You should:
+1. Make sure you enabled `Xcode` -> `Signing & Capabilities` -> `Background Modes` -> `Remote Notifications` enabled
+2. When sending background push from your APN back-end, the push header / payload should set:
+    * content-available = 1
+    * apns-push-type = 'background'
+    * apns-priority = 5
+
+
 ## Installation
 
 ```bash
