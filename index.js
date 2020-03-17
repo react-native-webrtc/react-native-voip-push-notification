@@ -136,6 +136,21 @@ export default class RNVoipPushNotification {
     }
 
     /**
+     * When you have processed necessary initialization for voip push, tell ios completed.
+     * This is mainly for ios 11+, which apple required us to execute `complete()` when we finished.
+     * If you want to use this function, make sure you call `[RNVoipPushNotificationManager addCompletionHandler:uuid completionHandler:completion];`
+     *   in `didReceiveIncomingPushWithPayload` in your AppDelegate.m
+     *
+     * @static
+     * @memberof RNVoipPushNotification
+     * 
+     * uuid:
+     */
+    static onVoipNotificationCompleted(uuid) {
+        RNVoipPushNotificationManager.onVoipNotificationCompleted(uuid);
+    }
+
+    /**
      * You will never need to instantiate `RNVoipPushNotification` yourself.
      * Listening to the `notification` event and invoking
      * `popInitialNotification` is sufficient
