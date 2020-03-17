@@ -60,10 +60,30 @@ static NSString *RCTCurrentAppBackgroundState()
 RCT_EXPORT_MODULE();
 
 @synthesize bridge = _bridge;
+static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *completionHandlers = nil;
+
++ (NSMutableDictionary *)completionHandlers {
+    if (completionHandlers == nil) {
+        completionHandlers = [NSMutableDictionary new];
+    }
+    return completionHandlers;
+}
 
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+
+    // --- invoke complete() and remove for all completionHanders
+    for (NSString *uuid in [RNVoipPushNotificationManager completionHandlers]) {
+        RNVoipPushNotificationCompletion completion = [[RNVoipPushNotificationManager completionHandlers] objectForKey:uuid];
+        if (completion) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                completion();
+            });
+        }
+    }
+
+    [[RNVoipPushNotificationManager completionHandlers] removeAllObjects];
 }
 
 - (void)setBridge:(RCTBridge *)bridge
@@ -188,6 +208,31 @@ RCT_EXPORT_MODULE();
     NSLog(@"[RNVoipPushNotificationManager] handleRemoteNotificationReceived notification.userInfo = %@", notification.userInfo);
     [_bridge.eventDispatcher sendDeviceEventWithName:@"voipRemoteNotificationReceived"
                                                 body:notification.userInfo];
+}
+
++ (void)addCompletionHandler:(NSString *)uuid completionHandler:(RNVoipPushNotificationCompletion)completionHandler
+{
+    self.completionHandlers[uuid] = completionHandler;
+}
+
++ (void)removeCompletionHandler:(NSString *)uuid
+{
+    self.completionHandlers[uuid] = nil;
+    [self.completionHandlers removeObjectForKey:uuid];
+}
+
+RCT_EXPORT_METHOD(onVoipNotificationCompleted:(NSString *)uuid)
+{
+    RNVoipPushNotificationCompletion completion = [[RNVoipPushNotificationManager completionHandlers] objectForKey:uuid];
+    if (completion) {
+        [RNVoipPushNotificationManager removeCompletionHandler: uuid];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSLog(@"[RNVoipPushNotificationManager] onVoipNotificationCompleted() complete(). uuid = %@", uuid);
+            completion();
+        });
+    } else {
+        NSLog(@"[RNVoipPushNotificationManager] onVoipNotificationCompleted() not found. uuid = %@", uuid);
+    }
 }
 
 RCT_EXPORT_METHOD(requestPermissions:(NSDictionary *)permissions)
