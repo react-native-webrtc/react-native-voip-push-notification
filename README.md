@@ -128,8 +128,6 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 // --- Handle incoming pushes (for ios >= 11)
 - (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type withCompletionHandler:(void (^)(void))completion {
   
-  // --- Process the received push
-  [RNVoipPushNotificationManager didReceiveIncomingPushWithPayload:payload forType:(NSString *)type];
 
   // --- NOTE: apple forced us to invoke callkit ASAP when we receive voip push
   // --- see: react-native-callkeep
@@ -139,9 +137,16 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
   NSString *callerName = [NSString stringWithFormat:@"%@ (Connecting...)", payload.dictionaryPayload[@"callerName"]];
   NSString *handle = payload.dictionaryPayload[@"handle"];
 
+  // --- this is optional, only required if you want to call `completion()` on the js side
+  [RNVoipPushNotificationManager addCompletionHandler:uuid completionHandler:completion];
+
+  // --- Process the received push
+  [RNVoipPushNotificationManager didReceiveIncomingPushWithPayload:payload forType:(NSString *)type];
+
   // --- You should make sure to report to callkit BEFORE execute `completion()`
   [RNCallKeep reportNewIncomingCall:uuid handle:handle handleType:@"generic" hasVideo:false localizedCallerName:callerName fromPushKit: YES payload:nil];
-    
+  
+  // --- You don't need to call it if you stored `completion()` and will call it on the js side.
   completion();
 }
 ...
@@ -220,6 +225,11 @@ class MyComponent extends React.Component {
          VoipPushNotification.wakeupByPush = false;
        }
 
+
+       // --- optionally, if you `addCompletionHandler` from the native side, once you have done the js jobs to initiate a call, call `completion()`
+       VoipPushNotification.onVoipNotificationCompleted(notification.getData().uuid);
+
+
       /**
        * Local Notification Payload
        *
@@ -235,7 +245,6 @@ class MyComponent extends React.Component {
     });
   }
 ...
-
 }
 
 ```
