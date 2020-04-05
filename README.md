@@ -140,7 +140,7 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
   NSString *handle = payload.dictionaryPayload[@"handle"];
 
   // --- You should make sure to report to callkit BEFORE execute `completion()`
-  [RNCallKeep reportNewIncomingCall:uuid handle:handle handleType:@"generic" hasVideo:false localizedCallerName:callerName fromPushKit: YES];
+  [RNCallKeep reportNewIncomingCall:uuid handle:handle handleType:@"generic" hasVideo:false localizedCallerName:callerName fromPushKit: YES payload:nil];
     
   completion();
 }
