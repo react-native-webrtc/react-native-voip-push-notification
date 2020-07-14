@@ -69,6 +69,11 @@ You should:
     * apns-push-type = 'background'
     * apns-priority = 5
 
+#### About missing first notification
+
+When your App is terminated from memory, JS `notification` event is not firing even though iOS receives notification.
+This happens because react native JS is not initialized and the notification object is not created, nor the event is not registrated.
+To prevent this missing notification, just call `initializationCompleted` method after adding all events. This method fires notification (if there exists) arrived before App start up.
 
 ## Installation
 

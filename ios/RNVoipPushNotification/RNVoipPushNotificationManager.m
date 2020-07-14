@@ -55,7 +55,9 @@ static NSString *RCTCurrentAppBackgroundState()
 
 @end
 
-@implementation RNVoipPushNotificationManager
+@implementation RNVoipPushNotificationManager {
+    NSDictionary * userInfo;
+}
 
 RCT_EXPORT_MODULE();
 
@@ -208,6 +210,7 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
     NSLog(@"[RNVoipPushNotificationManager] handleRemoteNotificationReceived notification.userInfo = %@", notification.userInfo);
     [_bridge.eventDispatcher sendDeviceEventWithName:@"voipRemoteNotificationReceived"
                                                 body:notification.userInfo];
+    userInfo = notification.userInfo;
 }
 
 + (void)addCompletionHandler:(NSString *)uuid completionHandler:(RNVoipPushNotificationCompletion)completionHandler
@@ -271,6 +274,16 @@ RCT_EXPORT_METHOD(presentLocalNotification:(UILocalNotification *)notification)
         [RCTSharedApplication() presentLocalNotificationNow:notification];
     });
 }
+
+RCT_EXPORT_METHOD(initializationCompleted)
+{
+    NSLog(@"[RNVoipPushNotificationManager] initializationCompleted");
+    if (userInfo != nil)
+        [_bridge.eventDispatcher sendDeviceEventWithName:@"voipRemoteNotificationReceived"
+                                                    body:userInfo];
+    userInfo = nil;
+}
+
 
 + (BOOL)requiresMainQueueSetup
 {

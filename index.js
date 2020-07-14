@@ -136,6 +136,16 @@ export default class RNVoipPushNotification {
     }
 
     /**
+     * RN JS initialization completed method. For missing notification.
+     *
+     * @static
+     * @memberof RNVoipPushNotification
+     */
+    static initializationCompleted() {
+        RNVoipPushNotificationManager.initializationCompleted();
+    }
+
+    /**
      * When you have processed necessary initialization for voip push, tell ios completed.
      * This is mainly for ios 11+, which apple required us to execute `complete()` when we finished.
      * If you want to use this function, make sure you call `[RNVoipPushNotificationManager addCompletionHandler:uuid completionHandler:completion];`
