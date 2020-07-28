@@ -12,6 +12,8 @@ var invariant = require('fbjs/lib/invariant');
 var _notifHandlers = new Map();
 
 var DEVICE_NOTIF_EVENT = 'voipRemoteNotificationReceived';
+var INITIAL_NOTIF_EVENT = "voipInitialNotificationProcess";
+
 var NOTIF_REGISTER_EVENT = 'voipRemoteNotificationsRegistered';
 var DEVICE_LOCAL_NOTIF_EVENT = 'voipLocalNotificationReceived';
 
@@ -47,7 +49,7 @@ export default class RNVoipPushNotification {
      */
     static addEventListener(type, handler) {
         invariant(
-            type === 'notification' || type === 'register' || type === 'localNotification',
+            type === 'notification' || type === 'register' || type === 'localNotification' || type === 'initial',
             'RNVoipPushNotificationManager only supports `notification`, `register` and `localNotification` events'
         );
         var listener;
@@ -70,6 +72,13 @@ export default class RNVoipPushNotification {
                 NOTIF_REGISTER_EVENT,
                 (registrationInfo) => {
                     handler(registrationInfo.deviceToken);
+                }
+            );
+        } else if (type === "initial") {
+            listener = DeviceEventEmitter.addListener(
+                INITIAL_NOTIF_EVENT,
+                (notifData) => {
+                    handler(new RNVoipPushNotification(notifData));
                 }
             );
         }

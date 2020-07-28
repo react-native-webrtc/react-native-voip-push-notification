@@ -15,6 +15,8 @@
 #import <React/RCTUtils.h>
 
 NSString *const RNVoipRemoteNotificationsRegistered = @"voipRemoteNotificationsRegistered";
+NSString *const RNVoipInitialNotificationProcess = @"voipInitialNotificationProcess";
+
 NSString *const RNVoipLocalNotificationReceived = @"voipLocalNotificationReceived";
 NSString *const RNVoipRemoteNotificationReceived = @"voipRemoteNotificationReceived";
 
@@ -279,7 +281,7 @@ RCT_EXPORT_METHOD(initializationCompleted)
 {
     NSLog(@"[RNVoipPushNotificationManager] initializationCompleted");
     if (userInfo != nil)
-        [_bridge.eventDispatcher sendDeviceEventWithName:@"voipRemoteNotificationReceived"
+        [_bridge.eventDispatcher sendDeviceEventWithName:@"voipInitialNotificationProcess"
                                                     body:userInfo];
     userInfo = nil;
 }
