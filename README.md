@@ -103,6 +103,8 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+...
+}
 
 ...
 
