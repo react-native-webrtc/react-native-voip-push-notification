@@ -205,10 +205,13 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 
 - (void)handleRemoteNotificationReceived:(NSNotification *)notification
 {
-    NSLog(@"[RNVoipPushNotificationManager] handleRemoteNotificationReceived notification.userInfo = %@", notification.userInfo);
+dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+     NSLog(@"[RNVoipPushNotificationManager] handleRemoteNotificationReceived notification.userInfo = %@", notification.userInfo);
     [_bridge.eventDispatcher sendDeviceEventWithName:@"voipRemoteNotificationReceived"
                                                 body:notification.userInfo];
+});
 }
+
 
 + (void)addCompletionHandler:(NSString *)uuid completionHandler:(RNVoipPushNotificationCompletion)completionHandler
 {
