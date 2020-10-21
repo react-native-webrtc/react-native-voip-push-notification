@@ -212,7 +212,6 @@ dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), di
 });
 }
 
-
 + (void)addCompletionHandler:(NSString *)uuid completionHandler:(RNVoipPushNotificationCompletion)completionHandler
 {
     self.completionHandlers[uuid] = completionHandler;
