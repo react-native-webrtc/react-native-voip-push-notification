@@ -198,9 +198,9 @@ class MyComponent extends React.Component {
             }
             for (let voipPushEvent of events) {
                 let { name, data } = voipPushEvent;
-                if (name === 'RNVoipPushRemoteNotificationsRegisteredEvent') {
+                if (name === VoipPushNotification.RNVoipPushRemoteNotificationsRegisteredEvent) {
                     this.onVoipPushNotificationRegistered(data);
-                } else if (name === 'RNVoipPushRemoteNotificationReceivedEvent') {
+                } else if (name === VoipPushNotification.RNVoipPushRemoteNotificationReceivedEvent) {
                     this.onVoipPushNotificationiReceived(data);
                 }
             }

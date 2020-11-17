@@ -18,6 +18,18 @@ const RNVoipPushDidLoadWithEvents = "RNVoipPushDidLoadWithEvents"; // --- 'didLo
 
 export default class RNVoipPushNotification {
 
+    static get RNVoipPushRemoteNotificationsRegisteredEvent() {
+        return RNVoipPushRemoteNotificationsRegisteredEvent;
+    }
+
+    static get RNVoipPushRemoteNotificationReceivedEvent() {
+        return RNVoipPushRemoteNotificationReceivedEvent;
+    }
+
+    static get RNVoipPushDidLoadWithEvents() {
+        return RNVoipPushDidLoadWithEvents;
+    }
+
     /**
      * Attaches a listener to remote notification events while the app is running
      * in the foreground or the background.
