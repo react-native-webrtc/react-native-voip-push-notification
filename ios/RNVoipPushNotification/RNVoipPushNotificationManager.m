@@ -12,63 +12,47 @@
 #import <React/RCTBridge.h>
 #import <React/RCTConvert.h>
 #import <React/RCTEventDispatcher.h>
+#import <React/RCTLog.h>
 #import <React/RCTUtils.h>
 
-NSString *const RNVoipRemoteNotificationsRegistered = @"voipRemoteNotificationsRegistered";
-NSString *const RNVoipLocalNotificationReceived = @"voipLocalNotificationReceived";
-NSString *const RNVoipRemoteNotificationReceived = @"voipRemoteNotificationReceived";
-
-static NSString *RCTCurrentAppBackgroundState()
-{
-    static NSDictionary *states;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        states = @{
-            @(UIApplicationStateActive): @"active",
-            @(UIApplicationStateBackground): @"background",
-            @(UIApplicationStateInactive): @"inactive"
-        };
-    });
-
-    if (RCTRunningInAppExtension()) {
-        return @"extension";
-    }
-
-    return states[@(RCTSharedApplication().applicationState)] ? : @"unknown";
-}
-
-@implementation RCTConvert (UILocalNotification)
-
-+ (UILocalNotification *)UILocalNotification:(id)json
-{
-    NSDictionary<NSString *, id> *details = [self NSDictionary:json];
-    UILocalNotification *notification = [UILocalNotification new];
-    notification.fireDate = [RCTConvert NSDate:details[@"fireDate"]] ?: [NSDate date];
-    notification.alertTitle = [RCTConvert NSString:details[@"alertTitle"]];
-    notification.alertBody = [RCTConvert NSString:details[@"alertBody"]];
-    notification.alertAction = [RCTConvert NSString:details[@"alertAction"]];
-    notification.soundName = [RCTConvert NSString:details[@"soundName"]] ?: UILocalNotificationDefaultSoundName;
-    notification.userInfo = [RCTConvert NSDictionary:details[@"userInfo"]];
-    notification.category = [RCTConvert NSString:details[@"category"]];
-    return notification;
-}
-
-@end
+NSString *const RNVoipPushRemoteNotificationsRegisteredEvent = @"RNVoipPushRemoteNotificationsRegisteredEvent";
+NSString *const RNVoipPushRemoteNotificationReceivedEvent = @"RNVoipPushRemoteNotificationReceivedEvent";
+NSString *const RNVoipPushDidLoadWithEvents = @"RNVoipPushDidLoadWithEvents";
 
 @implementation RNVoipPushNotificationManager
+{
+    bool _hasListeners;
+    NSMutableArray *_delayedEvents;
+}
 
 RCT_EXPORT_MODULE();
 
-@synthesize bridge = _bridge;
 static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *completionHandlers = nil;
 
-+ (NSMutableDictionary *)completionHandlers {
-    if (completionHandlers == nil) {
-        completionHandlers = [NSMutableDictionary new];
+
+// =====
+// ===== RN Module Configure and Override =====
+// =====
+
+
+- (instancetype)init
+{
+    if (self = [super init]) {
+        _delayedEvents = [NSMutableArray array];
     }
-    return completionHandlers;
+    return self;
 }
 
++ (id)allocWithZone:(NSZone *)zone {
+    static RNVoipPushNotificationManager *sharedInstance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        sharedInstance = [super allocWithZone:zone];
+    });
+    return sharedInstance;
+}
+
+// --- clean observer and completionHandlers when app close
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
@@ -86,128 +70,109 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
     [[RNVoipPushNotificationManager completionHandlers] removeAllObjects];
 }
 
-- (void)setBridge:(RCTBridge *)bridge
++ (BOOL)requiresMainQueueSetup
 {
-    _bridge = bridge;
-
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleRemoteNotificationsRegistered:)
-                                                 name:RNVoipRemoteNotificationsRegistered
-                                               object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleLocalNotificationReceived:)
-                                                 name:RNVoipLocalNotificationReceived
-                                               object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(handleRemoteNotificationReceived:)
-                                                 name:RNVoipRemoteNotificationReceived
-                                               object:nil];
+    return YES;
 }
 
-- (NSDictionary<NSString *, id> *)constantsToExport
+// --- Override method of RCTEventEmitter
+- (NSArray<NSString *> *)supportedEvents
 {
-    NSString *currentState = RCTCurrentAppBackgroundState();
-    NSLog(@"[RNVoipPushNotificationManager] constantsToExport currentState = %@", currentState);
-    return @{@"wakeupByPush": (currentState == @"background") ? @"true" : @"false"};
+    return @[
+        RNVoipPushRemoteNotificationsRegisteredEvent,
+        RNVoipPushRemoteNotificationReceivedEvent,
+        RNVoipPushDidLoadWithEvents
+    ];
 }
 
-- (void)registerUserNotification:(NSDictionary *)permissions
+- (void)startObserving
 {
-    UIUserNotificationType types = UIUserNotificationTypeNone;
-    if (permissions) {
-        if ([RCTConvert BOOL:permissions[@"alert"]]) {
-            types |= UIUserNotificationTypeAlert;
-        }
-        if ([RCTConvert BOOL:permissions[@"badge"]]) {
-            types |= UIUserNotificationTypeBadge;
-        }
-        if ([RCTConvert BOOL:permissions[@"sound"]]) {
-            types |= UIUserNotificationTypeSound;
-        }
-    } else {
-        types = UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound;
+    _hasListeners = YES;
+    if ([_delayedEvents count] > 0) {
+        [self sendEventWithName:RNVoipPushDidLoadWithEvents body:_delayedEvents];
     }
-
-    UIApplication *app = RCTSharedApplication();
-    UIUserNotificationSettings *notificationSettings =
-        [UIUserNotificationSettings settingsForTypes:(NSUInteger)types categories:nil];
-    [app registerUserNotificationSettings:notificationSettings];
 }
 
+- (void)stopObserving
+{
+    _hasListeners = NO;
+}
+
+
+
+// =====
+// ===== Class Method =====
+// =====
+
+// --- send directly if has listeners, cache it otherwise
+- (void)sendEventWithNameWrapper:(NSString *)name body:(id)body {
+    if (_hasListeners) {
+        [self sendEventWithName:name body:body];
+    } else {
+        NSDictionary *dictionary = @{
+            @"name": name,
+            @"data": body
+        };
+        [_delayedEvents addObject:dictionary];
+    }
+}
+
+// --- register voip token
 - (void)voipRegistration
 {
-    NSLog(@"[RNVoipPushNotificationManager] voipRegistration");
+#ifdef DEBUG
+    RCTLog(@"[RNVoipPushNotificationManager] voipRegistration");
+#endif
 
     dispatch_queue_t mainQueue = dispatch_get_main_queue();
     dispatch_async(mainQueue, ^{
-      // Create a push registry object
-      PKPushRegistry * voipRegistry = [[PKPushRegistry alloc] initWithQueue: mainQueue];
-      // Set the registry's delegate to AppDelegate
-      voipRegistry.delegate = (RNVoipPushNotificationManager *)RCTSharedApplication().delegate;
-      // Set the push type to VoIP
-      voipRegistry.desiredPushTypes = [NSSet setWithObject:PKPushTypeVoIP];
+        // --- Create a push registry object
+        PKPushRegistry * voipRegistry = [[PKPushRegistry alloc] initWithQueue: mainQueue];
+        // --- Set the registry's delegate to AppDelegate
+        voipRegistry.delegate = (RNVoipPushNotificationManager *)RCTSharedApplication().delegate;
+        // ---  Set the push type to VoIP
+        voipRegistry.desiredPushTypes = [NSSet setWithObject:PKPushTypeVoIP];
     });
 }
 
-- (NSDictionary *)checkPermissions
-{
-    NSUInteger types = [RCTSharedApplication() currentUserNotificationSettings].types;
-  
-    return @{
-        @"alert": @((types & UIUserNotificationTypeAlert) > 0),
-        @"badge": @((types & UIUserNotificationTypeBadge) > 0),
-        @"sound": @((types & UIUserNotificationTypeSound) > 0),
-    };
-  
-}
-
-+ (NSString *)getCurrentAppBackgroundState
-{
-    return RCTCurrentAppBackgroundState();
-}
-
+// --- should be called from `AppDelegate.didUpdatePushCredentials`
 + (void)didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type
 {
-    NSLog(@"[RNVoipPushNotificationManager] didUpdatePushCredentials credentials.token = %@, type = %@", credentials.token, type);
+#ifdef DEBUG
+    RCTLog(@"[RNVoipPushNotificationManager] didUpdatePushCredentials credentials.token = %@, type = %@", credentials.token, type);
+#endif
+    NSUInteger voipTokenLength = credentials.token.length;
+    if (voipTokenLength == 0) {
+        return;
+    }
 
     NSMutableString *hexString = [NSMutableString string];
-    NSUInteger voipTokenLength = credentials.token.length;
     const unsigned char *bytes = credentials.token.bytes;
     for (NSUInteger i = 0; i < voipTokenLength; i++) {
         [hexString appendFormat:@"%02x", bytes[i]];
     }
-    [[NSNotificationCenter defaultCenter] postNotificationName:RNVoipRemoteNotificationsRegistered
-                                                        object:self
-                                                      userInfo:@{@"deviceToken" : [hexString copy]}];
+
+    RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager allocWithZone: nil];
+    [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationsRegisteredEvent body:[hexString copy]];
 }
 
+// --- should be called from `AppDelegate.didReceiveIncomingPushWithPayload`
 + (void)didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type
 {
-    NSLog(@"[RNVoipPushNotificationManager] didReceiveIncomingPushWithPayload payload.dictionaryPayload = %@, type = %@", payload.dictionaryPayload, type);
-    [[NSNotificationCenter defaultCenter] postNotificationName:RNVoipRemoteNotificationReceived
-                                                        object:self
-                                                      userInfo:payload.dictionaryPayload];
+#ifdef DEBUG
+    RCTLog(@"[RNVoipPushNotificationManager] didReceiveIncomingPushWithPayload payload.dictionaryPayload = %@, type = %@", payload.dictionaryPayload, type);
+#endif
+
+    RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager allocWithZone: nil];
+    [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationReceivedEvent body:payload.dictionaryPayload];
 }
 
-- (void)handleRemoteNotificationsRegistered:(NSNotification *)notification
-{
-    NSLog(@"[RNVoipPushNotificationManager] handleRemoteNotificationsRegistered notification.userInfo = %@", notification.userInfo);
-    [_bridge.eventDispatcher sendDeviceEventWithName:@"voipRemoteNotificationsRegistered"
-                                                body:notification.userInfo];
-}
-
-- (void)handleLocalNotificationReceived:(NSNotification *)notification
-{
-    NSLog(@"[RNVoipPushNotificationManager] handleLocalNotificationReceived notification.userInfo = %@", notification.userInfo);
-    [_bridge.eventDispatcher sendDeviceEventWithName:@"voipLocalNotificationReceived"
-                                                body:notification.userInfo];
-}
-
-- (void)handleRemoteNotificationReceived:(NSNotification *)notification
-{
-    NSLog(@"[RNVoipPushNotificationManager] handleRemoteNotificationReceived notification.userInfo = %@", notification.userInfo);
-    [_bridge.eventDispatcher sendDeviceEventWithName:@"voipRemoteNotificationReceived"
-                                                body:notification.userInfo];
+// --- getter for completionHandlers
++ (NSMutableDictionary *)completionHandlers {
+    if (completionHandlers == nil) {
+        completionHandlers = [NSMutableDictionary new];
+    }
+    return completionHandlers;
 }
 
 + (void)addCompletionHandler:(NSString *)uuid completionHandler:(RNVoipPushNotificationCompletion)completionHandler
@@ -221,30 +186,13 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
     [self.completionHandlers removeObjectForKey:uuid];
 }
 
-RCT_EXPORT_METHOD(onVoipNotificationCompleted:(NSString *)uuid)
-{
-    RNVoipPushNotificationCompletion completion = [[RNVoipPushNotificationManager completionHandlers] objectForKey:uuid];
-    if (completion) {
-        [RNVoipPushNotificationManager removeCompletionHandler: uuid];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            NSLog(@"[RNVoipPushNotificationManager] onVoipNotificationCompleted() complete(). uuid = %@", uuid);
-            completion();
-        });
-    } else {
-        NSLog(@"[RNVoipPushNotificationManager] onVoipNotificationCompleted() not found. uuid = %@", uuid);
-    }
-}
 
-RCT_EXPORT_METHOD(requestPermissions:(NSDictionary *)permissions)
-{
-    if (RCTRunningInAppExtension()) {
-        return;
-    }
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self registerUserNotification:permissions];
-  });
-}
+// =====
+// ===== React Method =====
+// =====
 
+
+// --- register voip push token
 RCT_EXPORT_METHOD(registerVoipToken)
 {
     if (RCTRunningInAppExtension()) {
@@ -255,26 +203,24 @@ RCT_EXPORT_METHOD(registerVoipToken)
     });
 }
 
-RCT_EXPORT_METHOD(checkPermissions:(RCTResponseSenderBlock)callback)
+// --- called from js when finished to process incoming voip push
+RCT_EXPORT_METHOD(onVoipNotificationCompleted:(NSString *)uuid)
 {
-    if (RCTRunningInAppExtension()) {
-        callback(@[@{@"alert": @NO, @"badge": @NO, @"sound": @NO}]);
+    RNVoipPushNotificationCompletion completion = [[RNVoipPushNotificationManager completionHandlers] objectForKey:uuid];
+    if (completion) {
+#ifdef DEBUG
+        RCTLog(@"[RNVoipPushNotificationManager] onVoipNotificationCompleted() complete(). uuid = %@", uuid);
+#endif
+        [RNVoipPushNotificationManager removeCompletionHandler: uuid];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            completion();
+        });
         return;
     }
 
-    callback(@[[self checkPermissions]]);
-}
-
-RCT_EXPORT_METHOD(presentLocalNotification:(UILocalNotification *)notification)
-{
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [RCTSharedApplication() presentLocalNotificationNow:notification];
-    });
-}
-
-+ (BOOL)requiresMainQueueSetup
-{
-    return YES;
+#ifdef DEBUG
+    RCTLog(@"[RNVoipPushNotificationManager] onVoipNotificationCompleted() not found. uuid = %@", uuid);
+#endif
 }
 
 @end
