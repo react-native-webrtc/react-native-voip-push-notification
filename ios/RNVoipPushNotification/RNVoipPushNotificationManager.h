@@ -2,8 +2,9 @@
 //  RNVoipPushNotificationManager.h
 //  RNVoipPushNotification
 //
-//  Created by Ian Yu-Hsun Lin on 4/18/16.
-//  Copyright © 2016 ianyuhsunlin. All rights reserved.
+//  Copyright 2016-2020 The react-native-voip-push-notification Contributors
+//  see: https://github.com/react-native-webrtc/react-native-voip-push-notification/graphs/contributors
+//  SPDX-License-Identifier: ISC, MIT
 //
 
 #import <Foundation/Foundation.h>
