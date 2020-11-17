@@ -5,16 +5,6 @@
 
 React Native VoIP Push Notification - Currently iOS >= 8.0 only
 
-## Motivation
-
-Since iOS 8.0 there is an execellent feature called **VoIP Push Notification** ([PushKit][1]), while in React Native only the traditional push notification is supported which limits the possibilities of building a VoIP app with React Native (like me!).
-
-To understand the benefits of **Voip Push Notification**, please see [VoIP Best Practices][2].
-
-**Note 1**: Not sure if Android support this sort of stuff since I'm neither an iOS nor Android expert, from my limited understanding that GCM's [sending high priority push notification][5] might be the case. Correct me if I'm wrong!
-
-**Note 2** This module is inspired by [PushNotificationIOS][6] and [React Native Push Notification][7]
-
 ## RN Version
 
 * 1.1.0+ ( RN 40+ )
@@ -121,13 +111,7 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
   // --- The system calls this method when a previously provided push token is no longer valid for use. No action is necessary on your part to reregister the push type. Instead, use this method to notify your server not to send push notifications using the matching push token.
 }
 
-
-// --- Handle incoming pushes (for ios <= 10)
-- (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type {
-  [RNVoipPushNotificationManager didReceiveIncomingPushWithPayload:payload forType:(NSString *)type];
-}
-
-// --- Handle incoming pushes (for ios >= 11)
+// --- Handle incoming pushes
 - (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type withCompletionHandler:(void (^)(void))completion {
   
 
@@ -160,32 +144,32 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 ## Linking:
 
 On RN60+, auto linking with pod file should work.  
-Or you can try below:
+<details>
+  <summary>Linking Manually</summary>
 
-## Linking Manually:
-
-### Add PushKit Framework:
-
-- In your Xcode project, select `Build Phases` --> `Link Binary With Libraries`
-- Add `PushKit.framework`
-
-### Add RNVoipPushNotification:
-
-#### Option 1: Use [rnpm][3]
-
-```bash
-rnpm link react-native-voip-push-notification
-```
-
-**Note**: If you're using rnpm link make sure the `Header Search Paths` is `recursive`. (In step 3 of manually linking)
-
-#### Option 2: Manually
-
-1. Drag `node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification.xcodeproj` under `<your_xcode_project>/Libraries`
-2. Select `<your_xcode_project>` --> `Build Phases` --> `Link Binary With Libraries`
-  - Drag `Libraries/RNVoipPushNotification.xcodeproj/Products/libRNVoipPushNotification.a` to `Link Binary With Libraries`
-3. Select `<your_xcode_project>` --> `Build Settings`
-  - In `Header Search Paths`, add `$(SRCROOT)/../node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification` with `recursive`
+  ### Add PushKit Framework:
+  
+  - In your Xcode project, select `Build Phases` --> `Link Binary With Libraries`
+  - Add `PushKit.framework`
+  
+  ### Add RNVoipPushNotification:
+  
+  #### Option 1: Use [rnpm][3]
+  
+  ```bash
+  rnpm link react-native-voip-push-notification
+  ```
+  
+  **Note**: If you're using rnpm link make sure the `Header Search Paths` is `recursive`. (In step 3 of manually linking)
+  
+  #### Option 2: Manually
+  
+  1. Drag `node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification.xcodeproj` under `<your_xcode_project>/Libraries`
+  2. Select `<your_xcode_project>` --> `Build Phases` --> `Link Binary With Libraries`
+    - Drag `Libraries/RNVoipPushNotification.xcodeproj/Products/libRNVoipPushNotification.a` to `Link Binary With Libraries`
+  3. Select `<your_xcode_project>` --> `Build Settings`
+    - In `Header Search Paths`, add `$(SRCROOT)/../node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification` with `recursive`
+</details>
 
 ## Usage:
 
@@ -201,51 +185,48 @@ class MyComponent extends React.Component {
 
 ...
 
-  componentDidMount() { // or anywhere which is most comfortable and appropriate for you
-    VoipPushNotification.requestPermissions(); // --- optional, you can use another library to request permissions
-    VoipPushNotification.registerVoipToken(); // --- required
-  
-    VoipPushNotification.addEventListener('register', (token) => {
-      // --- send token to your apn provider server
-    });
+    // --- or anywhere which is most comfortable and appropriate for you, usually ASAP
+    componentDidMount() {
+        VoipPushNotification.registerVoipToken(); // --- register token
 
-    VoipPushNotification.addEventListener('localNotification', (notification) => {
-      // --- when user click local push
-    });
+        VoipPushNotification.addEventListener('didLoadWithEvents', (events) => {
+            // --- this will fire when there are events occured before js bridge initialized
+            // --- use this event to execute your event handler manually by event type
 
-    VoipPushNotification.addEventListener('notification', (notification) => {
-      // --- when receive remote voip push, register your VoIP client, show local notification ... etc
-      //this.doRegisterOrSomething();
+            if (!events || !Array.isArray(events) || events.length < 1) {
+                return;
+            }
+            for (let voipPushEvent of events) {
+                let { name, data } = voipPushEvent;
+                if (name === 'RNVoipPushRemoteNotificationsRegisteredEvent') {
+                    this.onVoipPushNotificationRegistered(data);
+                } else if (name === 'RNVoipPushRemoteNotificationReceivedEvent') {
+                    this.onVoipPushNotificationiReceived(data);
+                }
+            }
+        });
       
-       // --- This  is a boolean constant exported by this module
-       // --- you can use this constant to distinguish the app is launched by VoIP push notification or not
-       if (VoipPushNotification.wakeupByPush) {
-         // this.doSomething()
+        // --- onVoipPushNotificationRegistered
+        VoipPushNotification.addEventListener('register', (token) => {
+            // --- send token to your apn provider server
+        });
 
-         // --- remember to set this static variable back to false
-         // --- since the constant are exported only at initialization time, and it will keep the same in the whole app
-         VoipPushNotification.wakeupByPush = false;
-       }
+        // --- onVoipPushNotificationiReceived
+        VoipPushNotification.addEventListener('notification', (notification) => {
+            // --- when receive remote voip push, register your VoIP client, show local notification ... etc
+            this.doSomething();
+          
+            // --- optionally, if you `addCompletionHandler` from the native side, once you have done the js jobs to initiate a call, call `completion()`
+            VoipPushNotification.onVoipNotificationCompleted(notification.uuid);
+        });
+    }
 
-
-       // --- optionally, if you `addCompletionHandler` from the native side, once you have done the js jobs to initiate a call, call `completion()`
-       VoipPushNotification.onVoipNotificationCompleted(notification.getData().uuid);
-
-
-      /**
-       * Local Notification Payload
-       *
-       * - `alertBody` : The message displayed in the notification alert.
-       * - `alertAction` : The "action" displayed beneath an actionable notification. Defaults to "view";
-       * - `soundName` : The sound played when the notification is fired (optional).
-       * - `category`  : The category of this notification, required for actionable notifications (optional).
-       * - `userInfo`  : An optional object containing additional notification data.
-       */
-      VoipPushNotification.presentLocalNotification({
-          alertBody: "hello! " + notification.getMessage()
-      });
-    });
-  }
+    // --- unsubscribe event listeners
+    componentWillUnmount() {
+        VoipPushNotification.removeEventListener('didLoadWithEvents');
+        VoipPushNotification.removeEventListener('register');
+        VoipPushNotification.removeEventListener('notification');
+    }
 ...
 }
 
@@ -263,6 +244,3 @@ class MyComponent extends React.Component {
 [2]: https://developer.apple.com/library/ios/documentation/Performance/Conceptual/EnergyGuide-iOS/OptimizeVoIP.html
 [3]: https://github.com/rnpm/rnpm
 [4]: https://opensource.org/licenses/ISC
-[5]: https://developers.google.com/cloud-messaging/concept-options#setting-the-priority-of-a-message
-[6]: https://facebook.github.io/react-native/docs/pushnotificationios.html
-[7]: https://github.com/zo0r/react-native-push-notification
