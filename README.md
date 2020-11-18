@@ -93,7 +93,19 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-...
+  RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
+  
+
+
+  // ===== (THIS IS OPTIONAL) =====
+  // --- register VoipPushNotification here ASAP rather than in JS. Doing this from the JS side may be too slow for some use cases
+  // --- see: https://github.com/react-native-webrtc/react-native-voip-push-notification/issues/59#issuecomment-691685841
+  [RNVoipPushNotificationManager voipRegistration];
+  // ===== (THIS IS OPTIONAL) =====
+
+
+
+  RCTRootView *rootView = [[RCTRootView alloc] initWithBridge:bridge moduleName:@"AppName" initialProperties:nil];
 }
 
 ...
@@ -171,7 +183,34 @@ On RN60+, auto linking with pod file should work.
     - In `Header Search Paths`, add `$(SRCROOT)/../node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification` with `recursive`
 </details>
 
-## Usage:
+## API and Usage:
+
+#### Native API:
+
+Voip Push is time sensitive, these native API mainly used in AppDelegate.m, especially before JS bridge is up.
+This usually
+
+* `(void)voipRegistration` --- 
+  register delegate for PushKit if you like to register in AppDelegate.m ASAP instead JS side ( too late for some use cases )
+* `(void)didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type` ---
+  call this api to fire 'register' event to JS
+* `(void)didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type` ---
+  call this api to fire 'notification' event to JS
+* `(void)addCompletionHandler:(NSString *)uuid completionHandler:(RNVoipPushNotificationCompletion)completionHandler` ---
+  add completionHandler to RNVoipPush module
+* `(void)removeCompletionHandler:(NSString *)uuid` ---
+  remove completionHandler to RNVoipPush module
+
+#### JS API:
+
+* `registerVoipToken()` --- JS method to register PushKit delegate
+* `onVoipNotificationCompleted(notification.uuid)` --- JS mehtod to tell PushKit we have handled received voip push
+
+#### Events:
+
+* `'register'` --- fired when PushKit give us the latest token
+* `'notification'` --- fired when received voip push notification
+* `'didLoadWithEvents'` --- fired when there are not-fired events been cached before js bridge is up
 
 ```javascript
 
