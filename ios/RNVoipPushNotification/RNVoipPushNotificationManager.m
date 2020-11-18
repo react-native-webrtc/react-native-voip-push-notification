@@ -28,6 +28,7 @@ NSString *const RNVoipPushDidLoadWithEvents = @"RNVoipPushDidLoadWithEvents";
 
 RCT_EXPORT_MODULE();
 
+static bool _isVoipRegistered = NO;
 static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *completionHandlers = nil;
 
 
@@ -118,22 +119,29 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
     }
 }
 
-// --- register voip token
-- (void)voipRegistration
+// --- register delegate for PushKit to delivery credential and remote voip push to your delegate
+// --- this usually register once and ASAP after your app launch
++ (void)voipRegistration
 {
+    if (_isVoipRegistered) {
 #ifdef DEBUG
-    RCTLog(@"[RNVoipPushNotificationManager] voipRegistration");
+        RCTLog(@"[RNVoipPushNotificationManager] voipRegistration is already registered");
 #endif
-
-    dispatch_queue_t mainQueue = dispatch_get_main_queue();
-    dispatch_async(mainQueue, ^{
-        // --- Create a push registry object
-        PKPushRegistry * voipRegistry = [[PKPushRegistry alloc] initWithQueue: mainQueue];
-        // --- Set the registry's delegate to AppDelegate
-        voipRegistry.delegate = (RNVoipPushNotificationManager *)RCTSharedApplication().delegate;
-        // ---  Set the push type to VoIP
-        voipRegistry.desiredPushTypes = [NSSet setWithObject:PKPushTypeVoIP];
-    });
+    } else {
+        _isVoipRegistered = YES;
+#ifdef DEBUG
+        RCTLog(@"[RNVoipPushNotificationManager] voipRegistration enter");
+#endif
+        dispatch_queue_t mainQueue = dispatch_get_main_queue();
+        dispatch_async(mainQueue, ^{
+            // --- Create a push registry object
+            PKPushRegistry * voipRegistry = [[PKPushRegistry alloc] initWithQueue: mainQueue];
+            // --- Set the registry's delegate to AppDelegate
+            voipRegistry.delegate = (RNVoipPushNotificationManager *)RCTSharedApplication().delegate;
+            // ---  Set the push type to VoIP
+            voipRegistry.desiredPushTypes = [NSSet setWithObject:PKPushTypeVoIP];
+        });
+    }
 }
 
 // --- should be called from `AppDelegate.didUpdatePushCredentials`
@@ -200,7 +208,7 @@ RCT_EXPORT_METHOD(registerVoipToken)
         return;
     }
     dispatch_async(dispatch_get_main_queue(), ^{
-        [self voipRegistration];
+        [RNVoipPushNotificationManager voipRegistration];
     });
 }
 
