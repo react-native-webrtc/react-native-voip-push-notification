@@ -2,36 +2,32 @@
 
 import {
     NativeModules,
-    DeviceEventEmitter,
+    NativeEventEmitter,
     Platform,
 } from 'react-native';
 
-var RNVoipPushNotificationManager = NativeModules.RNVoipPushNotificationManager;
-var invariant = require('fbjs/lib/invariant');
+const RNVoipPushNotificationManager = NativeModules.RNVoipPushNotificationManager;
 
-var _notifHandlers = new Map();
+const eventEmitter = new NativeEventEmitter(RNVoipPushNotificationManager);
+const _eventHandlers = new Map();
 
-var DEVICE_NOTIF_EVENT = 'voipRemoteNotificationReceived';
-var NOTIF_REGISTER_EVENT = 'voipRemoteNotificationsRegistered';
-var DEVICE_LOCAL_NOTIF_EVENT = 'voipLocalNotificationReceived';
+// --- native unique event names
+const RNVoipPushRemoteNotificationsRegisteredEvent = "RNVoipPushRemoteNotificationsRegisteredEvent"; // --- 'register'
+const RNVoipPushRemoteNotificationReceivedEvent = "RNVoipPushRemoteNotificationReceivedEvent"; // --- 'notification'
+const RNVoipPushDidLoadWithEvents = "RNVoipPushDidLoadWithEvents"; // --- 'didLoadWithEvents'
 
 export default class RNVoipPushNotification {
 
-    static wakeupByPush = (Platform.OS == 'ios' && RNVoipPushNotificationManager.wakeupByPush === 'true');
+    static get RNVoipPushRemoteNotificationsRegisteredEvent() {
+        return RNVoipPushRemoteNotificationsRegisteredEvent;
+    }
 
-    /**
-     * Schedules the localNotification for immediate presentation.
-     *
-     * details is an object containing:
-     *
-     * - `alertBody` : The message displayed in the notification alert.
-     * - `alertAction` : The "action" displayed beneath an actionable notification. Defaults to "view";
-     * - `soundName` : The sound played when the notification is fired (optional).
-     * - `category`  : The category of this notification, required for actionable notifications (optional).
-     * - `userInfo`  : An optional object containing additional notification data.
-     */
-    static presentLocalNotification(details) {
-        RNVoipPushNotificationManager.presentLocalNotification(details);
+    static get RNVoipPushRemoteNotificationReceivedEvent() {
+        return RNVoipPushRemoteNotificationReceivedEvent;
+    }
+
+    static get RNVoipPushDidLoadWithEvents() {
+        return RNVoipPushDidLoadWithEvents;
     }
 
     /**
@@ -40,89 +36,53 @@ export default class RNVoipPushNotification {
      *
      * Valid events are:
      *
-     * - `notification` : Fired when a remote notification is received. The
-     *   handler will be invoked with an instance of `PushNotificationIOS`.
-     * - `register`: Fired when the user registers for remote notifications. The
-     *   handler will be invoked with a hex string representing the deviceToken.
+     * - `notification` : Fired when a remote notification is received.
+     * - `register`: Fired when the user registers for remote notifications.
+     * - `didLoadWithEvents`: Fired when the user have initially subscribed any listener and has cached events already.
      */
     static addEventListener(type, handler) {
-        invariant(
-            type === 'notification' || type === 'register' || type === 'localNotification',
-            'RNVoipPushNotificationManager only supports `notification`, `register` and `localNotification` events'
-        );
-        var listener;
+        let listener;
         if (type === 'notification') {
-            listener = DeviceEventEmitter.addListener(
-                DEVICE_NOTIF_EVENT,
-                (notifData) => {
-                    handler(new RNVoipPushNotification(notifData));
-                }
-            );
-        } else if (type === 'localNotification') {
-            listener = DeviceEventEmitter.addListener(
-                DEVICE_LOCAL_NOTIF_EVENT,
-                (notifData) => {
-                    handler(new RNVoipPushNotification(notifData));
+            listener = eventEmitter.addListener(
+                RNVoipPushRemoteNotificationReceivedEvent,
+                (notificationPayload) => {
+                    handler(notificationPayload);
                 }
             );
         } else if (type === 'register') {
-            listener = DeviceEventEmitter.addListener(
-                NOTIF_REGISTER_EVENT,
-                (registrationInfo) => {
-                    handler(registrationInfo.deviceToken);
+            listener = eventEmitter.addListener(
+                RNVoipPushRemoteNotificationsRegisteredEvent,
+                (deviceToken) => {
+                    handler(deviceToken);
                 }
             );
+        } else if (type === 'didLoadWithEvents') {
+            listener = eventEmitter.addListener(
+                RNVoipPushDidLoadWithEvents,
+                (events) => {
+                    handler(events);
+                }
+            );
+        } else {
+            return;
         }
-        _notifHandlers.set(handler, listener);
+
+        // --- we only support one listener at a time, remove to prevent leak
+        RNVoipPushNotification.removeEventListener(type);
+        _eventHandlers.set(type, listener);
     }
 
     /**
      * Removes the event listener. Do this in `componentWillUnmount` to prevent
      * memory leaks
      */
-    static removeEventListener(type, handler) {
-        invariant(
-            type === 'notification' || type === 'register' || type === 'localNotification',
-            'RNVoipPushNotification only supports `notification`, `register` and `localNotification` events'
-        );
-        var listener = _notifHandlers.get(handler);
+    static removeEventListener(type) {
+        let listener = _eventHandlers.get(type);
         if (!listener) {
             return;
         }
         listener.remove();
-        _notifHandlers.delete(handler);
-    }
-
-    /**
-     * Requests notification permissions from iOS, prompting the user's
-     * dialog box. By default, it will request all notification permissions, but
-     * a subset of these can be requested by passing a map of requested
-     * permissions.
-     * The following permissions are supported:
-     *
-     *   - `alert`
-     *   - `badge`
-     *   - `sound`
-     *
-     * If a map is provided to the method, only the permissions with truthy values
-     * will be requested.
-     */
-    static requestPermissions(permissions) {
-        var requestedPermissions = {};
-        if (permissions) {
-            requestedPermissions = {
-                alert: !!permissions.alert,
-                badge: !!permissions.badge,
-                sound: !!permissions.sound
-            };
-        } else {
-            requestedPermissions = {
-                alert: true,
-                badge: true,
-                sound: true
-            };
-        }
-        RNVoipPushNotificationManager.requestPermissions(requestedPermissions);
+        _eventHandlers.delete(type);
     }
 
     /**
@@ -150,63 +110,4 @@ export default class RNVoipPushNotification {
         RNVoipPushNotificationManager.onVoipNotificationCompleted(uuid);
     }
 
-    /**
-     * You will never need to instantiate `RNVoipPushNotification` yourself.
-     * Listening to the `notification` event and invoking
-     * `popInitialNotification` is sufficient
-     */
-    constructor(nativeNotif) {
-        this._data = {};
-  
-        // Extract data from Apple's `aps` dict as defined:
-  
-        // https://developer.apple.com/library/ios/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/Chapters/ApplePushService.html
-  
-        Object.keys(nativeNotif).forEach((notifKey) => {
-            var notifVal = nativeNotif[notifKey];
-            if (notifKey === 'aps') {
-                this._alert = notifVal.alert;
-                this._sound = notifVal.sound;
-                this._badgeCount = notifVal.badge;
-            } else {
-                this._data[notifKey] = notifVal;
-            }
-        });
-    }
-
-    /**
-     * An alias for `getAlert` to get the notification's main message string
-     */
-    getMessage() {
-        // alias because "alert" is an ambiguous name
-        return this._alert;
-    }
-  
-    /**
-     * Gets the sound string from the `aps` object
-     */
-    getSound() {
-        return this._sound;
-    }
-  
-    /**
-     * Gets the notification's main message from the `aps` object
-     */
-    getAlert() {
-        return this._alert;
-    }
-  
-    /**
-     * Gets the badge count number from the `aps` object
-     */
-    getBadgeCount() {
-        return this._badgeCount;
-    }
-  
-    /**
-     * Gets the data object on the notif
-     */
-    getData() {
-        return this._data;
-    }
 }

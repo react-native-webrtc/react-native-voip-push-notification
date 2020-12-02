@@ -2,26 +2,24 @@
 //  RNVoipPushNotificationManager.h
 //  RNVoipPushNotification
 //
-//  Created by Ian Yu-Hsun Lin on 4/18/16.
-//  Copyright © 2016 ianyuhsunlin. All rights reserved.
+//  Copyright 2016-2020 The react-native-voip-push-notification Contributors
+//  see: https://github.com/react-native-webrtc/react-native-voip-push-notification/graphs/contributors
+//  SPDX-License-Identifier: ISC, MIT
 //
 
 #import <Foundation/Foundation.h>
-
 #import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
-@interface RNVoipPushNotificationManager : NSObject <RCTBridgeModule>
+@interface RNVoipPushNotificationManager : RCTEventEmitter <RCTBridgeModule>
 
 typedef void (^RNVoipPushNotificationCompletion)(void);
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *completionHandlers;
 
-- (void)voipRegistration;
-- (void)registerUserNotification:(NSDictionary *)permissions;
-- (NSDictionary *)checkPermissions;
++ (void)voipRegistration;
 + (void)didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type;
 + (void)didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type;
-+ (NSString *)getCurrentAppBackgroundState;
 + (void)addCompletionHandler:(NSString *)uuid completionHandler:(RNVoipPushNotificationCompletion)completionHandler;
 + (void)removeCompletionHandler:(NSString *)uuid;
 
