@@ -1,6 +1,6 @@
 {
   "name": "react-native-voip-push-notification",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "VoIP push notification on react-native",
   "main": "index.js",
   "scripts": {
