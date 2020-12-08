@@ -97,11 +97,11 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
   
 
 
-  // ===== (THIS IS OPTIONAL) =====
+  // ===== (THIS IS OPTIONAL BUT RECOMMENDED) =====
   // --- register VoipPushNotification here ASAP rather than in JS. Doing this from the JS side may be too slow for some use cases
   // --- see: https://github.com/react-native-webrtc/react-native-voip-push-notification/issues/59#issuecomment-691685841
   [RNVoipPushNotificationManager voipRegistration];
-  // ===== (THIS IS OPTIONAL) =====
+  // ===== (THIS IS OPTIONAL BUT RECOMMENDED) =====
 
 
 
@@ -224,10 +224,33 @@ class MyComponent extends React.Component {
 
 ...
 
-    // --- or anywhere which is most comfortable and appropriate for you, usually ASAP
+    // --- anywhere which is most comfortable and appropriate for you,
+    // --- usually ASAP, ex: in your app.js or at some global scope.
     componentDidMount() {
-        VoipPushNotification.registerVoipToken(); // --- register token
 
+        // --- NOTE: You still need to subscribe / handle the rest events as usuall.
+        // --- This is just a helper whcih cache and propagate early fired events if and only if for
+        // --- "the native events which DID fire BEFORE js bridge is initialed",
+        // --- it does NOT mean this will have events each time when the app reopened.
+
+
+        // ===== Step 1: subscribe `register` event =====
+        // --- this.onVoipPushNotificationRegistered
+        VoipPushNotification.addEventListener('register', (token) => {
+            // --- send token to your apn provider server
+        });
+
+        // ===== Step 2: subscribe `notification` event =====
+        // --- this.onVoipPushNotificationiReceived
+        VoipPushNotification.addEventListener('notification', (notification) => {
+            // --- when receive remote voip push, register your VoIP client, show local notification ... etc
+            this.doSomething();
+          
+            // --- optionally, if you `addCompletionHandler` from the native side, once you have done the js jobs to initiate a call, call `completion()`
+            VoipPushNotification.onVoipNotificationCompleted(notification.uuid);
+        });
+
+        // ===== Step 3: subscribe `didLoadWithEvents` event =====
         VoipPushNotification.addEventListener('didLoadWithEvents', (events) => {
             // --- this will fire when there are events occured before js bridge initialized
             // --- use this event to execute your event handler manually by event type
@@ -244,20 +267,10 @@ class MyComponent extends React.Component {
                 }
             }
         });
-      
-        // --- onVoipPushNotificationRegistered
-        VoipPushNotification.addEventListener('register', (token) => {
-            // --- send token to your apn provider server
-        });
 
-        // --- onVoipPushNotificationiReceived
-        VoipPushNotification.addEventListener('notification', (notification) => {
-            // --- when receive remote voip push, register your VoIP client, show local notification ... etc
-            this.doSomething();
-          
-            // --- optionally, if you `addCompletionHandler` from the native side, once you have done the js jobs to initiate a call, call `completion()`
-            VoipPushNotification.onVoipNotificationCompleted(notification.uuid);
-        });
+        // ===== Step 4: register =====
+        // --- it will be no-op ( no event will be fired ) if you have subscribed before like in native side.
+        VoipPushNotification.registerVoipToken(); // --- register token
     }
 
     // --- unsubscribe event listeners
