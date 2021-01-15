@@ -29,6 +29,7 @@ NSString *const RNVoipPushDidLoadWithEvents = @"RNVoipPushDidLoadWithEvents";
 RCT_EXPORT_MODULE();
 
 static bool _isVoipRegistered = NO;
+static NSString *_lastVoipToken = @"";
 static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *completionHandlers = nil;
 
 
@@ -125,8 +126,10 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 {
     if (_isVoipRegistered) {
 #ifdef DEBUG
-        RCTLog(@"[RNVoipPushNotificationManager] voipRegistration is already registered");
+        RCTLog(@"[RNVoipPushNotificationManager] voipRegistration is already registered. return _lastVoipToken = %@", _lastVoipToken);
 #endif
+        RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager allocWithZone: nil];
+        [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationsRegisteredEvent body:_lastVoipToken];
     } else {
         _isVoipRegistered = YES;
 #ifdef DEBUG
@@ -161,8 +164,10 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
         [hexString appendFormat:@"%02x", bytes[i]];
     }
 
+    _lastVoipToken = [hexString copy];
+
     RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager allocWithZone: nil];
-    [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationsRegisteredEvent body:[hexString copy]];
+    [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationsRegisteredEvent body:_lastVoipToken];
 }
 
 // --- should be called from `AppDelegate.didReceiveIncomingPushWithPayload`
