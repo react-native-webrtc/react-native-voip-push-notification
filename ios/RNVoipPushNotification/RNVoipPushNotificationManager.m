@@ -11,10 +11,8 @@
 #import "RNVoipPushNotificationManager.h"
 
 #import <React/RCTBridge.h>
-#import <React/RCTConvert.h>
 #import <React/RCTEventDispatcher.h>
 #import <React/RCTLog.h>
-#import <React/RCTUtils.h>
 
 NSString *const RNVoipPushRemoteNotificationsRegisteredEvent = @"RNVoipPushRemoteNotificationsRegisteredEvent";
 NSString *const RNVoipPushRemoteNotificationReceivedEvent = @"RNVoipPushRemoteNotificationReceivedEvent";
