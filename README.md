@@ -269,7 +269,8 @@ class MyComponent extends React.Component {
         });
 
         // ===== Step 4: register =====
-        // --- it will be no-op ( no event will be fired ) if you have subscribed before like in native side.
+        // --- it will be no-op if you have subscribed before (like in native side)
+        // --- but will fire `register` event if we have latest cahced voip token ( it may be empty if no token at all )
         VoipPushNotification.registerVoipToken(); // --- register token
     }
 
