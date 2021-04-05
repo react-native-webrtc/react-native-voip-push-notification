@@ -39,7 +39,9 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 - (instancetype)init
 {
     if (self = [super init]) {
-        _delayedEvents = [NSMutableArray array];
+        if (_delayedEvents == nil) {
+            _delayedEvents = [NSMutableArray array];
+        }
     }
     return self;
 }
