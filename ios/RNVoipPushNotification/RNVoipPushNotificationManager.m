@@ -30,27 +30,32 @@ static bool _isVoipRegistered = NO;
 static NSString *_lastVoipToken = @"";
 static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *completionHandlers = nil;
 
-
 // =====
 // ===== RN Module Configure and Override =====
 // =====
 
+-(instancetype) init {
+    return [[self class] sharedInstance];
+}
 
-- (instancetype)init
-{
-    if (self = [super init]) {
+-(instancetype) initPrivate {
+    self = [super init];
+    if (self) {
+        // Initialization code here.
         _delayedEvents = [NSMutableArray array];
     }
     return self;
 }
 
-+ (id)allocWithZone:(NSZone *)zone {
-    static RNVoipPushNotificationManager *sharedInstance = nil;
+// Singletone implementation based on https://stackoverflow.com/q/5720029/3686678 and https://stackoverflow.com/a/7035136/3686678
++(instancetype) sharedInstance {
+    static RNVoipPushNotificationManager *sharedVoipPushManager = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        sharedInstance = [super allocWithZone:zone];
+        sharedVoipPushManager = [[self alloc] initPrivate];
     });
-    return sharedInstance;
+
+    return sharedVoipPushManager;
 }
 
 // --- clean observer and completionHandlers when app close
@@ -90,12 +95,18 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 {
     _hasListeners = YES;
     if ([_delayedEvents count] > 0) {
+        // RCTLog(@"[RNVoipPushNotificationManager] sendEventWithName _hasListeners = %d name = %@", _hasListeners, RNVoipPushDidLoadWithEvents);
         [self sendEventWithName:RNVoipPushDidLoadWithEvents body:_delayedEvents];
     }
 }
 
 - (void)stopObserving
 {
+#ifdef DEBUG
+    // RCTLog(@"[RNVoipPushNotificationManager] skip stopObserving because in debug mode startObserving is not called on reload, but stopObserving is called before reload");
+    return;
+#endif
+
     _hasListeners = NO;
 }
 
@@ -107,6 +118,7 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 
 // --- send directly if has listeners, cache it otherwise
 - (void)sendEventWithNameWrapper:(NSString *)name body:(id)body {
+    // RCTLog(@"[RNVoipPushNotificationManager] sendEventWithNameWrapper _hasListeners = %d  name = %@", _hasListeners, name);
     if (_hasListeners) {
         [self sendEventWithName:name body:body];
     } else {
@@ -126,7 +138,7 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 #ifdef DEBUG
         RCTLog(@"[RNVoipPushNotificationManager] voipRegistration is already registered. return _lastVoipToken = %@", _lastVoipToken);
 #endif
-        RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager allocWithZone: nil];
+        RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager sharedInstance];
         [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationsRegisteredEvent body:_lastVoipToken];
     } else {
         _isVoipRegistered = YES;
@@ -164,7 +176,7 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 
     _lastVoipToken = [hexString copy];
 
-    RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager allocWithZone: nil];
+    RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager sharedInstance];
     [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationsRegisteredEvent body:_lastVoipToken];
 }
 
@@ -175,7 +187,7 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
     RCTLog(@"[RNVoipPushNotificationManager] didReceiveIncomingPushWithPayload payload.dictionaryPayload = %@, type = %@", payload.dictionaryPayload, type);
 #endif
 
-    RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager allocWithZone: nil];
+    RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager sharedInstance];
     [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationReceivedEvent body:payload.dictionaryPayload];
 }
 
