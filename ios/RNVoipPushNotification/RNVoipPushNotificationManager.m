@@ -39,12 +39,8 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 }
 
 -(instancetype) initPrivate {
-    self = [super init];
-    if (self) {
-        // Initialization code here.
-        _delayedEvents = [NSMutableArray array];
-    }
-    return self;
+    _delayedEvents = [NSMutableArray array];
+    return [super init];
 }
 
 // Singletone implementation based on https://stackoverflow.com/q/5720029/3686678 and https://stackoverflow.com/a/7035136/3686678
@@ -95,18 +91,12 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 {
     _hasListeners = YES;
     if ([_delayedEvents count] > 0) {
-        // RCTLog(@"[RNVoipPushNotificationManager] sendEventWithName _hasListeners = %d name = %@", _hasListeners, RNVoipPushDidLoadWithEvents);
         [self sendEventWithName:RNVoipPushDidLoadWithEvents body:_delayedEvents];
     }
 }
 
 - (void)stopObserving
 {
-#ifdef DEBUG
-    // RCTLog(@"[RNVoipPushNotificationManager] skip stopObserving because in debug mode startObserving is not called on reload, but stopObserving is called before reload");
-    return;
-#endif
-
     _hasListeners = NO;
 }
 
@@ -118,7 +108,6 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 
 // --- send directly if has listeners, cache it otherwise
 - (void)sendEventWithNameWrapper:(NSString *)name body:(id)body {
-    // RCTLog(@"[RNVoipPushNotificationManager] sendEventWithNameWrapper _hasListeners = %d  name = %@", _hasListeners, name);
     if (_hasListeners) {
         [self sendEventWithName:name body:body];
     } else {
