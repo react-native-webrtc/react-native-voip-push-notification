@@ -39,8 +39,12 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 }
 
 -(instancetype) initPrivate {
-    _delayedEvents = [NSMutableArray array];
-    return [super init];
+    self = [super init];
+    if (self) {
+        _delayedEvents = [NSMutableArray array];
+    }
+
+    return self;
 }
 
 // Singletone implementation based on https://stackoverflow.com/q/5720029/3686678 and https://stackoverflow.com/a/7035136/3686678
