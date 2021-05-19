@@ -34,13 +34,14 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 // ===== RN Module Configure and Override =====
 // =====
 
--(instancetype) init {
+-(instancetype) init
+{
     return [[self class] sharedInstance];
 }
 
--(instancetype) initPrivate {
-    self = [super init];
-    if (self) {
+-(instancetype) initPrivate
+{
+    if (self = [super init]) {
         _delayedEvents = [NSMutableArray array];
     }
 
@@ -48,7 +49,8 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 }
 
 // Singletone implementation based on https://stackoverflow.com/q/5720029/3686678 and https://stackoverflow.com/a/7035136/3686678
-+(instancetype) sharedInstance {
++(instancetype) sharedInstance
+{
     static RNVoipPushNotificationManager *sharedVoipPushManager = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
