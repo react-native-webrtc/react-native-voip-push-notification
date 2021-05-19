@@ -97,6 +97,11 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 
 - (void)stopObserving
 {
+// Skip stopObserving because in debug mode startObserving is not called on reload, but stopObserving is called before reload
+#ifdef DEBUG
+    return;
+#endif
+
     _hasListeners = NO;
 }
 
