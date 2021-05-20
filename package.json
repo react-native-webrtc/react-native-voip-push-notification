@@ -1,7 +1,7 @@
 {
   "name": "react-native-voip-push-notification",
   "version": "3.2.0",
-  "description": "VoIP push notification on react-native",
+  "description": "Ios PushKit for VoIP push notification on react-native",
   "main": "index.js",
   "typings": "./index.d.ts",
   "scripts": {
@@ -9,18 +9,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ianlin/react-native-voip-push-notification.git"
+    "url": "git+https://github.com/react-native-webrtc/react-native-voip-push-notification.git"
   },
-  "author": "Ian Yu-Hsun Lin <ianyuhsunlin@gmail.com>",
+  "author": "React Native WebRTC Community. Original: Ian Yu-Hsun Lin <ianyuhsunlin@gmail.com>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/ianlin/react-native-voip-push-notification/issues"
+    "url": "https://github.com/react-native-webrtc/react-native-voip-push-notification/issues"
   },
-  "homepage": "https://github.com/ianlin/react-native-voip-push-notification#readme",
+  "homepage": "https://github.com/react-native-webrtc/react-native-voip-push-notification#readme",
   "peerDependencies": {
-    "react-native": ">=0.19.0"
-  },
-  "devDependencies": {
-    "react-native": ">=0.19.0"
+    "react-native": ">=0.60.0"
   }
 }
