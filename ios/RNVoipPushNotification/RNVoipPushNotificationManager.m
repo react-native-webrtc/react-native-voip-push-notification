@@ -101,12 +101,6 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
     }
 }
 
-- (void)stopObserving
-{
-    _hasListeners = NO;
-}
-
-
 
 // =====
 // ===== Class Method =====
