@@ -204,7 +204,7 @@ This usually
 #### JS API:
 
 * `registerVoipToken()` --- JS method to register PushKit delegate
-* `onVoipNotificationCompleted(notification.uuid)` --- JS mehtod to tell PushKit we have handled received voip push
+* `onVoipNotificationCompleted(notification.uuid)` --- JS method to tell PushKit we have handled received voip push
 
 #### Events:
 
