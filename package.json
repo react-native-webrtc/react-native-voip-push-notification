@@ -5,7 +5,9 @@
   "main": "index.js",
   "typings": "./index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:plugin": "rimraf plugin/build && tsc --build plugin",
+    "prepare": "npm run build:plugin"
   },
   "repository": {
     "type": "git",
