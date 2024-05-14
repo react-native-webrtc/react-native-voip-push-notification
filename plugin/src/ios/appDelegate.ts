@@ -4,7 +4,10 @@ export const withIosAppDelegate: ConfigPlugin = (config) => {
   return withAppDelegate(config, (cfg) => {
     const { modResults } = cfg;
 
+    // method to invoke voip registration
+    // I decided to use this as soon as the app starts to avoid js delay issues
     const methodInvocationBlock = `[RNVoipPushNotificationManager voipRegistration];`;
+
     // https://regex101.com/r/mPgaq6/1
     const methodInvocationLineMatcher =
       /(?:self\.moduleName\s*=\s*@\"([^"]*)\";)|(?:(self\.|_)(\w+)\s?=\s?\[\[UMModuleRegistryAdapter alloc\])|(?:RCTBridge\s?\*\s?(\w+)\s?=\s?\[(\[RCTBridge alloc\]|self\.reactDelegate))/g;
@@ -24,6 +27,7 @@ export const withIosAppDelegate: ConfigPlugin = (config) => {
       );
     }
 
+    // Merging the method invocation block into the AppDelegate.m file
     try {
       modResults.contents = mergeContents({
         tag: "RNVoipPushNotificationAppDelegate",

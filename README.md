@@ -23,31 +23,31 @@ https://developer.apple.com/documentation/pushkit/pkpushregistrydelegate/2875784
 > When linking against the iOS 13 SDK or later, your implementation of this method must report notifications of type voIP to the CallKit framework by calling the reportNewIncomingCall(with:update:completion:) method
 >
 > On iOS 13.0 and later, if you fail to report a call to CallKit, the system will terminate your app.
-> 
+>
 > Repeatedly failing to report calls may cause the system to stop delivering any more VoIP push notifications to your app.
-> 
+>
 > If you want to initiate a VoIP call without using CallKit, register for push notifications using the UserNotifications framework instead of PushKit. For more information, see UserNotifications.
 
 #### Issue introduced in this change:
 
-When received VoipPush, we should present CallKit ASAP even before RN instance initialization.  
-  
-This breaks especially if you handled almost call behavior at js side, for example:  
-Do-Not-Disturb / check if Ghost-Call / using some sip libs to register or waiting invite...etc.  
-  
+When received VoipPush, we should present CallKit ASAP even before RN instance initialization.
+
+This breaks especially if you handled almost call behavior at js side, for example:
+Do-Not-Disturb / check if Ghost-Call / using some sip libs to register or waiting invite...etc.
+
 Staff from Apple gives some advisions for these issues in the below discussion:
 https://forums.developer.apple.com/thread/117939
 
 #### You may need to change your server for APN voip push:
 
-Especially `apns-push-type` value should be `'voip'` for iOS 13  
-And be aware of `apns-expiration`value, adjust according to your call logics  
-  
+Especially `apns-push-type` value should be `'voip'` for iOS 13
+And be aware of `apns-expiration`value, adjust according to your call logics
+
 https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/sending_notification_requests_to_apns
 
 #### About Silent Push ( Background Push ):
 
-VoIP pushes were intended to specifically support incoming call notifications and nothing else.   
+VoIP pushes were intended to specifically support incoming call notifications and nothing else.
 
 If you were using voip push to do things other than `nootify incoming call`, such as: `cancel call` / `background updates`...etc,  You should change to use [Notification Service Extension](https://developer.apple.com/documentation/usernotifications/unnotificationserviceextension), it contains different kind of pushs.
 
@@ -94,7 +94,7 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
   RCTBridge *bridge = [[RCTBridge alloc] initWithDelegate:self launchOptions:launchOptions];
-  
+
 
 
   // ===== (THIS IS OPTIONAL BUT RECOMMENDED) =====
@@ -125,7 +125,7 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 
 // --- Handle incoming pushes
 - (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type withCompletionHandler:(void (^)(void))completion {
-  
+
 
   // --- NOTE: apple forced us to invoke callkit ASAP when we receive voip push
   // --- see: react-native-callkeep
@@ -143,7 +143,7 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 
   // --- You should make sure to report to callkit BEFORE execute `completion()`
   [RNCallKeep reportNewIncomingCall:uuid handle:handle handleType:@"generic" hasVideo:false localizedCallerName:callerName fromPushKit: YES payload:nil];
-  
+
   // --- You don't need to call it if you stored `completion()` and will call it on the js side.
   completion();
 }
@@ -153,29 +153,51 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 
 ```
 
+### EXPO:
+It is important to install this with react-native-callkeep, so you can use the CallKit to present the incoming call screen.
+Make sure you set the following in your `app.json`:
+```javascript
+{
+  "expo": {
+    "ios": {
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "remote-notification", //for background notification optional
+          "voip" // permission for voip
+        ]
+      }
+    },
+    "plugins": [
+        ..., // other plugins
+        "react-native-voip-push-notification"
+    ]
+  }
+}
+```
+
 ## Linking:
 
-On RN60+, auto linking with pod file should work.  
+On RN60+, auto linking with pod file should work.
 <details>
   <summary>Linking Manually</summary>
 
   ### Add PushKit Framework:
-  
+
   - In your Xcode project, select `Build Phases` --> `Link Binary With Libraries`
   - Add `PushKit.framework`
-  
+
   ### Add RNVoipPushNotification:
-  
+
   #### Option 1: Use [rnpm][3]
-  
+
   ```bash
   rnpm link react-native-voip-push-notification
   ```
-  
+
   **Note**: If you're using rnpm link make sure the `Header Search Paths` is `recursive`. (In step 3 of manually linking)
-  
+
   #### Option 2: Manually
-  
+
   1. Drag `node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification.xcodeproj` under `<your_xcode_project>/Libraries`
   2. Select `<your_xcode_project>` --> `Build Phases` --> `Link Binary With Libraries`
     - Drag `Libraries/RNVoipPushNotification.xcodeproj/Products/libRNVoipPushNotification.a` to `Link Binary With Libraries`
@@ -190,7 +212,7 @@ On RN60+, auto linking with pod file should work.
 Voip Push is time sensitive, these native API mainly used in AppDelegate.m, especially before JS bridge is up.
 This usually
 
-* `(void)voipRegistration` --- 
+* `(void)voipRegistration` ---
   register delegate for PushKit if you like to register in AppDelegate.m ASAP instead JS side ( too late for some use cases )
 * `(void)didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type` ---
   call this api to fire 'register' event to JS
@@ -245,7 +267,7 @@ class MyComponent extends React.Component {
         VoipPushNotification.addEventListener('notification', (notification) => {
             // --- when receive remote voip push, register your VoIP client, show local notification ... etc
             this.doSomething();
-          
+
             // --- optionally, if you `addCompletionHandler` from the native side, once you have done the js jobs to initiate a call, call `completion()`
             VoipPushNotification.onVoipNotificationCompleted(notification.uuid);
         });
