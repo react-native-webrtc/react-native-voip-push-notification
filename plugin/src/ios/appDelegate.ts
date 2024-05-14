@@ -18,9 +18,9 @@ export const withIosAppDelegate: ConfigPlugin = (config) => {
       modResults.contents = modResults.contents.replace(
         /#import "AppDelegate.h"/g,
         `#import "AppDelegate.h"
-        #import <PushKit/PushKit.h>
-        #import "RNVoipPushNotificationManager.h"
-        #import "RNCallKeep.h"`
+#import <PushKit/PushKit.h>
+#import "RNVoipPushNotificationManager.h"
+#import "RNCallKeep.h"`
       );
     }
 
@@ -51,39 +51,41 @@ export const withIosAppDelegate: ConfigPlugin = (config) => {
       modResults.contents = modResults.contents.replace(
         /@end/g,
         `/* Add PushKit delegate method */
-            - (void)pushRegistry:(PKPushRegistry *)registry didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(PKPushType)type
-            {
-                [RNVoipPushNotificationManager didUpdatePushCredentials:credentials forType:(NSString *)type];
-            }
+- (void)pushRegistry:(PKPushRegistry *)registry didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(PKPushType)type
+{
+    [RNVoipPushNotificationManager didUpdatePushCredentials:credentials forType:(NSString *)type];
+}
 
-            - (void)pushRegistry:(PKPushRegistry *)registry didInvalidatePushTokenForType:(PKPushType)type
-            {}
+- (void)pushRegistry:(PKPushRegistry *)registry didInvalidatePushTokenForType:(PKPushType)type
+{
 
-            - (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type withCompletionHandler:(void (^)(void))completion
-            {
-                NSString *uuid = payload.dictionaryPayload[@"uuid"];
-                NSString *callerName = [NSString stringWithFormat:@"%@ (Connecting...)", payload.dictionaryPayload[@"callerName"]];
-                NSString *handle = payload.dictionaryPayload[@"handle"];
+}
 
-                [RNVoipPushNotificationManager addCompletionHandler:uuid completionHandler:completion];
+- (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type withCompletionHandler:(void (^)(void))completion
+{
+    NSString *uuid = payload.dictionaryPayload[@"uuid"];
+    NSString *callerName = [NSString stringWithFormat:@"%@ (Connecting...)", payload.dictionaryPayload[@"callerName"]];
+    NSString *handle = payload.dictionaryPayload[@"handle"];
 
-                [RNVoipPushNotificationManager didReceiveIncomingPushWithPayload:payload forType:(NSString *)type];
+    [RNVoipPushNotificationManager addCompletionHandler:uuid completionHandler:completion];
 
-                [RNCallKeep reportNewIncomingCall: uuid
-                            handle: handle
-                            handleType: @"generic"
-                            hasVideo: NO
-                            localizedCallerName: callerName
-                            supportsHolding: YES
-                            supportsDTMF: YES
-                            supportsGrouping: YES
-                            supportsUngrouping: YES
-                            fromPushKit: YES
-                            payload: nil
-                            withCompletionHandler: completion];
-            }
+    [RNVoipPushNotificationManager didReceiveIncomingPushWithPayload:payload forType:(NSString *)type];
 
-            @end`
+    [RNCallKeep reportNewIncomingCall: uuid
+                handle: handle
+                handleType: @"generic"
+                hasVideo: NO
+                localizedCallerName: callerName
+                supportsHolding: YES
+                supportsDTMF: YES
+                supportsGrouping: YES
+                supportsUngrouping: YES
+                fromPushKit: YES
+                payload: nil
+                withCompletionHandler: completion];
+}
+
+@end`
       );
     }
 
