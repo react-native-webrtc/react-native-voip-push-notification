@@ -7,8 +7,8 @@ React Native VoIP Push Notification - Currently iOS >= 8.0 only
 
 ## RN Version
 
-* 1.1.0+ ( RN 40+ )
-* 2.0.0+ (RN 60+)
+- 1.1.0+ ( RN 40+ )
+- 2.0.0+ (RN 60+)
 
 ## !!IMPORTANT NOTE!!
 
@@ -49,16 +49,16 @@ https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_
 
 VoIP pushes were intended to specifically support incoming call notifications and nothing else.
 
-If you were using voip push to do things other than `nootify incoming call`, such as: `cancel call` / `background updates`...etc,  You should change to use [Notification Service Extension](https://developer.apple.com/documentation/usernotifications/unnotificationserviceextension), it contains different kind of pushs.
+If you were using voip push to do things other than `nootify incoming call`, such as: `cancel call` / `background updates`...etc, You should change to use [Notification Service Extension](https://developer.apple.com/documentation/usernotifications/unnotificationserviceextension), it contains different kind of pushs.
 
-To  use`Background Push` to [Pushing Background Updates to Your App](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/pushing_background_updates_to_your_app),
+To use`Background Push` to [Pushing Background Updates to Your App](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/pushing_background_updates_to_your_app),
 You should:
+
 1. Make sure you enabled `Xcode` -> `Signing & Capabilities` -> `Background Modes` -> `Remote Notifications` enabled
 2. When sending background push from your APN back-end, the push header / payload should set:
-    * content-available = 1
-    * apns-push-type = 'background'
-    * apns-priority = 5
-
+   - content-available = 1
+   - apns-push-type = 'background'
+   - apns-priority = 5
 
 ## Installation
 
@@ -75,8 +75,9 @@ The iOS version should be >= 8.0 since we are using [PushKit][1].
 Please refer to [VoIP Best Practices][2].
 
 Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
-* `Background Modes` -> `Voice over IP` enabled
-* `+Capability` -> `Push Notifications`
+
+- `Background Modes` -> `Voice over IP` enabled
+- `+Capability` -> `Push Notifications`
 
 #### AppDelegate.m Modification
 
@@ -154,8 +155,22 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 ```
 
 ### EXPO:
+
+The following VOIP json properties are required and prevent crashing your app:
+
+```typescript
+{
+  uuid: string;
+  callerName: string;
+  handle: string;
+  isVideo: boolean; //optional; default to false
+  // rest of your data
+}
+```
+
 It is important to install this with react-native-callkeep, so you can use the CallKit to present the incoming call screen.
 Make sure you set the following in your `app.json`:
+
 ```javascript
 {
   "expo": {
@@ -178,31 +193,36 @@ Make sure you set the following in your `app.json`:
 ## Linking:
 
 On RN60+, auto linking with pod file should work.
+
 <details>
   <summary>Linking Manually</summary>
 
-  ### Add PushKit Framework:
+### Add PushKit Framework:
 
-  - In your Xcode project, select `Build Phases` --> `Link Binary With Libraries`
-  - Add `PushKit.framework`
+- In your Xcode project, select `Build Phases` --> `Link Binary With Libraries`
+- Add `PushKit.framework`
 
-  ### Add RNVoipPushNotification:
+### Add RNVoipPushNotification:
 
-  #### Option 1: Use [rnpm][3]
+#### Option 1: Use [rnpm][3]
 
-  ```bash
-  rnpm link react-native-voip-push-notification
-  ```
+```bash
+rnpm link react-native-voip-push-notification
+```
 
-  **Note**: If you're using rnpm link make sure the `Header Search Paths` is `recursive`. (In step 3 of manually linking)
+**Note**: If you're using rnpm link make sure the `Header Search Paths` is `recursive`. (In step 3 of manually linking)
 
-  #### Option 2: Manually
+#### Option 2: Manually
 
-  1. Drag `node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification.xcodeproj` under `<your_xcode_project>/Libraries`
-  2. Select `<your_xcode_project>` --> `Build Phases` --> `Link Binary With Libraries`
-    - Drag `Libraries/RNVoipPushNotification.xcodeproj/Products/libRNVoipPushNotification.a` to `Link Binary With Libraries`
-  3. Select `<your_xcode_project>` --> `Build Settings`
-    - In `Header Search Paths`, add `$(SRCROOT)/../node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification` with `recursive`
+1. Drag `node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification.xcodeproj` under `<your_xcode_project>/Libraries`
+2. Select `<your_xcode_project>` --> `Build Phases` --> `Link Binary With Libraries`
+
+   - Drag `Libraries/RNVoipPushNotification.xcodeproj/Products/libRNVoipPushNotification.a` to `Link Binary With Libraries`
+
+3. Select `<your_xcode_project>` --> `Build Settings`
+
+   - In `Header Search Paths`, add `$(SRCROOT)/../node_modules/react-native-voip-push-notification/ios/RNVoipPushNotification` with `recursive`
+
 </details>
 
 ## API and Usage:
@@ -212,27 +232,27 @@ On RN60+, auto linking with pod file should work.
 Voip Push is time sensitive, these native API mainly used in AppDelegate.m, especially before JS bridge is up.
 This usually
 
-* `(void)voipRegistration` ---
+- `(void)voipRegistration` ---
   register delegate for PushKit if you like to register in AppDelegate.m ASAP instead JS side ( too late for some use cases )
-* `(void)didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type` ---
+- `(void)didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type` ---
   call this api to fire 'register' event to JS
-* `(void)didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type` ---
+- `(void)didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type` ---
   call this api to fire 'notification' event to JS
-* `(void)addCompletionHandler:(NSString *)uuid completionHandler:(RNVoipPushNotificationCompletion)completionHandler` ---
+- `(void)addCompletionHandler:(NSString *)uuid completionHandler:(RNVoipPushNotificationCompletion)completionHandler` ---
   add completionHandler to RNVoipPush module
-* `(void)removeCompletionHandler:(NSString *)uuid` ---
+- `(void)removeCompletionHandler:(NSString *)uuid` ---
   remove completionHandler to RNVoipPush module
 
 #### JS API:
 
-* `registerVoipToken()` --- JS method to register PushKit delegate
-* `onVoipNotificationCompleted(notification.uuid)` --- JS mehtod to tell PushKit we have handled received voip push
+- `registerVoipToken()` --- JS method to register PushKit delegate
+- `onVoipNotificationCompleted(notification.uuid)` --- JS mehtod to tell PushKit we have handled received voip push
 
 #### Events:
 
-* `'register'` --- fired when PushKit give us the latest token
-* `'notification'` --- fired when received voip push notification
-* `'didLoadWithEvents'` --- fired when there are not-fired events been cached before js bridge is up
+- `'register'` --- fired when PushKit give us the latest token
+- `'notification'` --- fired when received voip push notification
+- `'didLoadWithEvents'` --- fired when there are not-fired events been cached before js bridge is up
 
 ```javascript
 

@@ -28,26 +28,27 @@ export const withIosAppDelegate: ConfigPlugin = (config) => {
     }
 
     // Merging the method invocation block into the AppDelegate.m file
-    try {
-      modResults.contents = mergeContents({
-        tag: "RNVoipPushNotificationAppDelegate",
-        src: modResults.contents,
-        anchor: methodInvocationLineMatcher,
-        offset: 0,
-        comment: "// ",
-        newSrc: methodInvocationBlock,
-      }).contents;
-    } catch (e) {
-      // Fallback to the other regex
-      modResults.contents = mergeContents({
-        tag: "RNVoipPushNotificationAppDelegate",
-        src: modResults.contents,
-        anchor: fallbackInvocationLineMatcher,
-        offset: 0,
-        comment: "// ",
-        newSrc: methodInvocationBlock,
-      }).contents;
-    }
+    // having problem with auth,  https://github.com/react-native-webrtc/react-native-callkeep/issues/735
+    //try {
+    //  modResults.contents = mergeContents({
+    //    tag: "RNVoipPushNotificationAppDelegate",
+    //    src: modResults.contents,
+    //    anchor: methodInvocationLineMatcher,
+    //    offset: 0,
+    //    comment: "// ",
+    //    newSrc: methodInvocationBlock,
+    //  }).contents;
+    //} catch (e) {
+    //  // Fallback to the other regex
+    //  modResults.contents = mergeContents({
+    //    tag: "RNVoipPushNotificationAppDelegate",
+    //    src: modResults.contents,
+    //    anchor: fallbackInvocationLineMatcher,
+    //    offset: 0,
+    //    comment: "// ",
+    //    newSrc: methodInvocationBlock,
+    //  }).contents;
+    //}
 
     // Add PushKit delegate method to the bottom of the file
     // if other appDelegates are being implemented I will need to add this to the bottom of the file
@@ -68,24 +69,30 @@ export const withIosAppDelegate: ConfigPlugin = (config) => {
 - (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(PKPushType)type withCompletionHandler:(void (^)(void))completion
 {
     NSString *uuid = payload.dictionaryPayload[@"uuid"];
-    NSString *callerName = [NSString stringWithFormat:@"%@ (Connecting...)", payload.dictionaryPayload[@"callerName"]];
+    NSString *callerName = [NSString stringWithFormat:@"%@ is Calling", payload.dictionaryPayload[@"callerName"]];
     NSString *handle = payload.dictionaryPayload[@"handle"];
+    BOOL isVideo = [payload.dictionaryPayload[@"isVideo"] boolValue];
+    BOOL videoVal = NO;
+
+    if(isVideo) {
+      videoVal = YES;
+    }
 
     [RNVoipPushNotificationManager addCompletionHandler:uuid completionHandler:completion];
 
     [RNVoipPushNotificationManager didReceiveIncomingPushWithPayload:payload forType:(NSString *)type];
 
     [RNCallKeep reportNewIncomingCall: uuid
-                handle: handle
-                handleType: @"generic"
-                hasVideo: NO
-                localizedCallerName: callerName
-                supportsHolding: YES
-                supportsDTMF: YES
-                supportsGrouping: YES
-                supportsUngrouping: YES
-                fromPushKit: YES
-                payload: nil
+                               handle: handle
+                           handleType: @"generic"
+                             hasVideo: videoVal
+                  localizedCallerName: callerName
+                      supportsHolding: YES
+                         supportsDTMF: YES
+                     supportsGrouping: YES
+                   supportsUngrouping: YES
+                          fromPushKit: YES
+                              payload: nil
                 withCompletionHandler: completion];
 }
 
