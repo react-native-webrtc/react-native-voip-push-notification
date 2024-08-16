@@ -5,7 +5,9 @@
   "main": "index.js",
   "typings": "./index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:plugin": "rimraf plugin/build && tsc --build plugin",
+    "prepare": "npm run build:plugin"
   },
   "repository": {
     "type": "git",
@@ -18,6 +20,16 @@
   },
   "homepage": "https://github.com/react-native-webrtc/react-native-voip-push-notification#readme",
   "peerDependencies": {
-    "react-native": ">=0.60.0"
+    "react-native": ">=0.60.0",
+    "expo": ">=47.0.0"
+  },
+  "devDependencies": {
+    "expo": "^50.0.15",
+    "expo-module-scripts": "^3.5.1"
+  },
+  "peerDependenciesMeta": {
+    "expo": {
+      "optional": true
+    }
   }
 }
