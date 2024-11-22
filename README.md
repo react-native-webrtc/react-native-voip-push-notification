@@ -20,7 +20,7 @@ Now Apple forced us to invoke CallKit ASAP when we receive voip push on iOS 13 a
 
 https://developer.apple.com/documentation/pushkit/pkpushregistrydelegate/2875784-pushregistry
 
-> When linking against the iOS 13 SDK or later, your implementation of this method must report notifications of type voIP to the CallKit framework by calling the reportNewIncomingCall(with:update:completion:) method
+> When linking against the iOS 13 SDK or later, your implementation of this method must report notifications of type VoIP to the CallKit framework by calling the `reportNewIncomingCall(with:update:completion:)` method
 >
 > On iOS 13.0 and later, if you fail to report a call to CallKit, the system will terminate your app.
 > 
@@ -32,7 +32,7 @@ https://developer.apple.com/documentation/pushkit/pkpushregistrydelegate/2875784
 
 When received VoipPush, we should present CallKit ASAP even before RN instance initialization.  
   
-This breaks especially if you handled almost call behavior at js side, for example:  
+This breaks especially if you almost handled call behavior at js side, for example:  
 Do-Not-Disturb / check if Ghost-Call / using some sip libs to register or waiting invite...etc.  
   
 Staff from Apple gives some advisions for these issues in the below discussion:
@@ -49,11 +49,11 @@ https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_
 
 VoIP pushes were intended to specifically support incoming call notifications and nothing else.   
 
-If you were using voip push to do things other than `nootify incoming call`, such as: `cancel call` / `background updates`...etc,  You should change to use [Notification Service Extension](https://developer.apple.com/documentation/usernotifications/unnotificationserviceextension), it contains different kind of pushs.
+If you were using voip push to do things other than `nootify incoming call`, such as: `cancel call` / `background updates`...etc,  You should change to use [Notification Service Extension](https://developer.apple.com/documentation/usernotifications/unnotificationserviceextension), it contains different kind of pushes.
 
 To  use`Background Push` to [Pushing Background Updates to Your App](https://developer.apple.com/documentation/usernotifications/setting_up_a_remote_notification_server/pushing_background_updates_to_your_app),
 You should:
-1. Make sure you enabled `Xcode` -> `Signing & Capabilities` -> `Background Modes` -> `Remote Notifications` enabled
+1. Make sure you enabled `Xcode` -> `Signing & Capabilities` -> `Background Modes` -> `Remote Notifications`
 2. When sending background push from your APN back-end, the push header / payload should set:
     * content-available = 1
     * apns-push-type = 'background'
@@ -204,7 +204,7 @@ This usually
 #### JS API:
 
 * `registerVoipToken()` --- JS method to register PushKit delegate
-* `onVoipNotificationCompleted(notification.uuid)` --- JS mehtod to tell PushKit we have handled received voip push
+* `onVoipNotificationCompleted(notification.uuid)` --- JS method to tell PushKit we have handled received voip push
 
 #### Events:
 
