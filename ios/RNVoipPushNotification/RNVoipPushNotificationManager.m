@@ -18,6 +18,89 @@ NSString *const RNVoipPushRemoteNotificationsRegisteredEvent = @"RNVoipPushRemot
 NSString *const RNVoipPushRemoteNotificationReceivedEvent = @"RNVoipPushRemoteNotificationReceivedEvent";
 NSString *const RNVoipPushDidLoadWithEvents = @"RNVoipPushDidLoadWithEvents";
 
+// --- Return a guaranteed JSON-serializable string. Unpaired UTF-16 surrogates
+// --- pass +isValidJSONObject: yet still make -dataWithJSONObject: throw, so we
+// --- use NSJSONSerialization itself as the oracle: original -> lossy ASCII -> "".
+static NSString *RNVoipSafeString(NSString *string)
+{
+    if (![string isKindOfClass:[NSString class]] || string.length == 0) {
+        return @"";
+    }
+    NSData *asciiData = [string dataUsingEncoding:NSASCIIStringEncoding allowLossyConversion:YES];
+    NSString *asciiLossy = asciiData ? [[NSString alloc] initWithData:asciiData encoding:NSASCIIStringEncoding] : nil;
+    NSArray<NSString *> *candidates = @[ string, asciiLossy ?: @"", @"" ];
+    for (NSString *candidate in candidates) {
+        @try {
+            NSError *error = nil;
+            if ([NSJSONSerialization dataWithJSONObject:@[ candidate ] options:0 error:&error] != nil && error == nil) {
+                return candidate;
+            }
+        } @catch (NSException *exception) {
+            // try the next, more conservative candidate
+        }
+    }
+    return @"";
+}
+
+// --- Recursively coerce any object into a JSON-safe representation so the RN
+// --- bridge's NSJSONSerialization can never throw NSInvalidArgumentException
+// --- (observed as a SIGABRT on the iOS 26 SDK).
+static id RNVoipSanitizeJSONObject(id object)
+{
+    if (object == nil || [object isKindOfClass:[NSNull class]]) {
+        return [NSNull null];
+    }
+    if ([object isKindOfClass:[NSString class]]) {
+        return RNVoipSafeString((NSString *)object);
+    }
+    if ([object isKindOfClass:[NSNumber class]]) {
+        double value = [(NSNumber *)object doubleValue];
+        if (isnan(value) || isinf(value)) { return @0; } // NaN/Infinity are not valid JSON
+        return object;
+    }
+    if ([object isKindOfClass:[NSArray class]]) {
+        NSMutableArray *result = [NSMutableArray arrayWithCapacity:[(NSArray *)object count]];
+        for (id element in (NSArray *)object) {
+            [result addObject:RNVoipSanitizeJSONObject(element)];
+        }
+        return result;
+    }
+    if ([object isKindOfClass:[NSDictionary class]]) {
+        NSMutableDictionary *result = [NSMutableDictionary dictionaryWithCapacity:[(NSDictionary *)object count]];
+        [(NSDictionary *)object enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL *stop) {
+            NSString *stringKey = [key isKindOfClass:[NSString class]] ? RNVoipSafeString((NSString *)key) : RNVoipSafeString([key description]);
+            if (stringKey.length > 0) {
+                result[stringKey] = RNVoipSanitizeJSONObject(value);
+            }
+        }];
+        return result;
+    }
+    return RNVoipSafeString([object description]); // NSData / NSDate / custom -> string
+}
+
+// --- Return a body the RN bridge is GUARANTEED to serialize. The bridge runs
+// --- NSJSONSerialization on the JS thread asynchronously, so a @try/@catch
+// --- around sendEventWithName: cannot catch the throw; we therefore pre-flight
+// --- the exact serialization HERE and only forward a proven-safe body.
+static id RNVoipSerializableBodyOrFallback(NSDictionary *rawPayload)
+{
+    id sanitized = RNVoipSanitizeJSONObject(rawPayload);
+    @try {
+        if ([NSJSONSerialization isValidJSONObject:sanitized]) {
+            NSError *error = nil;
+            if ([NSJSONSerialization dataWithJSONObject:sanitized options:0 error:&error] != nil && error == nil) {
+                return sanitized;
+            }
+        }
+    } @catch (NSException *exception) {
+        // fall through to the minimal payload below
+    }
+    NSLog(@"[RNVoipPushNotification] PushKit payload not JSON-serializable after sanitize; forwarding minimal fallback.");
+    NSDictionary *raw = [rawPayload isKindOfClass:[NSDictionary class]] ? rawPayload : @{};
+    return @{ @"_rnvoip_sanitized": @YES,
+              @"voip_call_id": RNVoipSafeString([raw[@"voip_call_id"] description]) };
+}
+
 @implementation RNVoipPushNotificationManager
 {
     bool _hasListeners;
@@ -177,7 +260,12 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 #endif
 
     RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager sharedInstance];
-    [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationReceivedEvent body:payload.dictionaryPayload];
+    // iOS 26 SIGABRT fix: the RN bridge serializes the event body with
+    // NSJSONSerialization asynchronously on the JS thread, so a @try/@catch
+    // around sendEventWithName: cannot catch the throw. Pre-flight the exact
+    // serialization here and only forward a body proven to serialize.
+    id safeBody = RNVoipSerializableBodyOrFallback(payload.dictionaryPayload);
+    [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationReceivedEvent body:safeBody];
 }
 
 // --- getter for completionHandlers
