@@ -14,5 +14,6 @@ Pod::Spec.new do |s|
   s.requires_arc        = true
   s.platform            = :ios, "8.0"
   s.source_files        = "ios/RNVoipPushNotification/*.{h,m}"
+  s.private_header_files = "ios/RNVoipPushNotification/RNVoipPushPayloadSerialization.h"
   s.dependency 'React-Core'
 end

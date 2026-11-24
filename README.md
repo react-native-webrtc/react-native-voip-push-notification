@@ -213,7 +213,7 @@ This usually
 
 * `'register'` --- fired when PushKit give us the latest token
 * `'invalidate'` --- fired when PushKit invalidates the VoIP token; payload is `{ token, type }`. `token` is the last token received in this process and may be empty. Early events use the existing process-local `didLoadWithEvents` cache; they are not persisted or replayed after the app process terminates.
-* `'notification'` --- fired when received voip push notification
+* `'notification'` --- fired when received voip push notification. JSON-serializable payloads are forwarded unchanged. If a payload must be sanitized to prevent native serialization failure, unsupported values become `null`, malformed strings are lossily repaired or replaced with an empty string, and the reserved `_rnvoip_payload_sanitized` key is set to `true`; if sanitization cannot preserve a dictionary, the event contains only that marker.
 * `'didLoadWithEvents'` --- fired when there are not-fired events been cached before js bridge is up
 
 ```javascript

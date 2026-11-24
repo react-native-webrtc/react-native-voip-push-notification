@@ -9,6 +9,7 @@
 
 #import <PushKit/PushKit.h>
 #import "RNVoipPushNotificationManager.h"
+#import "RNVoipPushPayloadSerialization.h"
 
 #import <React/RCTBridge.h>
 #import <React/RCTEventDispatcher.h>
@@ -192,7 +193,16 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 #endif
 
     RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager sharedInstance];
-    [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationReceivedEvent body:payload.dictionaryPayload];
+    // iOS 26 SIGABRT fix: the RN bridge serializes the event body with
+    // NSJSONSerialization asynchronously on the JS thread, so a @try/@catch
+    // around sendEventWithName: cannot catch the throw. Pre-flight the exact
+    // serialization here and only forward a body proven to serialize.
+    BOOL didSanitize = NO;
+    NSDictionary *safeBody = RNVoipPushPayloadForBridge(payload.dictionaryPayload, &didSanitize);
+    if (didSanitize) {
+        RCTLogWarn(@"[RNVoipPushNotificationManager] PushKit payload was not JSON-serializable and was sanitized before forwarding.");
+    }
+    [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationReceivedEvent body:safeBody];
 }
 
 // --- getter for completionHandlers
