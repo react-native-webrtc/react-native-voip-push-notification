@@ -15,6 +15,7 @@
 #import <React/RCTLog.h>
 
 NSString *const RNVoipPushRemoteNotificationsRegisteredEvent = @"RNVoipPushRemoteNotificationsRegisteredEvent";
+NSString *const RNVoipPushRemoteNotificationsInvalidatedEvent = @"RNVoipPushRemoteNotificationsInvalidatedEvent";
 NSString *const RNVoipPushRemoteNotificationReceivedEvent = @"RNVoipPushRemoteNotificationReceivedEvent";
 NSString *const RNVoipPushDidLoadWithEvents = @"RNVoipPushDidLoadWithEvents";
 
@@ -88,6 +89,7 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 {
     return @[
         RNVoipPushRemoteNotificationsRegisteredEvent,
+        RNVoipPushRemoteNotificationsInvalidatedEvent,
         RNVoipPushRemoteNotificationReceivedEvent,
         RNVoipPushDidLoadWithEvents
     ];
@@ -167,6 +169,19 @@ static NSMutableDictionary<NSString *, RNVoipPushNotificationCompletion> *comple
 
     RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager sharedInstance];
     [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationsRegisteredEvent body:_lastVoipToken];
+}
+
+// --- should be called from `AppDelegate.didInvalidatePushTokenForType`
++ (void)didInvalidatePushTokenForType:(NSString *)type
+{
+    NSString *invalidatedToken = _lastVoipToken ?: @"";
+    _lastVoipToken = @"";
+
+    RNVoipPushNotificationManager *voipPushManager = [RNVoipPushNotificationManager sharedInstance];
+    [voipPushManager sendEventWithNameWrapper:RNVoipPushRemoteNotificationsInvalidatedEvent body:@{
+        @"token": invalidatedToken,
+        @"type": type ?: @"",
+    }];
 }
 
 // --- should be called from `AppDelegate.didReceiveIncomingPushWithPayload`

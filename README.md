@@ -121,6 +121,7 @@ Make sure you enabled the folowing in `Xcode` -> `Signing & Capabilities`:
 - (void)pushRegistry:(PKPushRegistry *)registry didInvalidatePushTokenForType:(PKPushType)type
 {
   // --- The system calls this method when a previously provided push token is no longer valid for use. No action is necessary on your part to reregister the push type. Instead, use this method to notify your server not to send push notifications using the matching push token.
+  [RNVoipPushNotificationManager didInvalidatePushTokenForType:(NSString *)type];
 }
 
 // --- Handle incoming pushes
@@ -194,6 +195,8 @@ This usually
   register delegate for PushKit if you like to register in AppDelegate.m ASAP instead JS side ( too late for some use cases )
 * `(void)didUpdatePushCredentials:(PKPushCredentials *)credentials forType:(NSString *)type` ---
   call this api to fire 'register' event to JS
+* `(void)didInvalidatePushTokenForType:(NSString *)type` ---
+  call this API from the matching PushKit delegate method to fire the `invalidate` event to JS
 * `(void)didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type` ---
   call this api to fire 'notification' event to JS
 * `(void)addCompletionHandler:(NSString *)uuid completionHandler:(RNVoipPushNotificationCompletion)completionHandler` ---
@@ -209,6 +212,7 @@ This usually
 #### Events:
 
 * `'register'` --- fired when PushKit give us the latest token
+* `'invalidate'` --- fired when PushKit invalidates the VoIP token; payload is `{ token, type }`. `token` is the last token received in this process and may be empty. Early events use the existing process-local `didLoadWithEvents` cache; they are not persisted or replayed after the app process terminates.
 * `'notification'` --- fired when received voip push notification
 * `'didLoadWithEvents'` --- fired when there are not-fired events been cached before js bridge is up
 
@@ -240,7 +244,13 @@ class MyComponent extends React.Component {
             // --- send token to your apn provider server
         });
 
-        // ===== Step 2: subscribe `notification` event =====
+        // ===== Step 2: subscribe `invalidate` event =====
+        VoipPushNotification.addEventListener('invalidate', ({ token, type }) => {
+            // --- stop sending VoIP pushes to this token on your server
+            // --- token may be empty if this process has not received credentials yet
+        });
+
+        // ===== Step 3: subscribe `notification` event =====
         // --- this.onVoipPushNotificationiReceived
         VoipPushNotification.addEventListener('notification', (notification) => {
             // --- when receive remote voip push, register your VoIP client, show local notification ... etc
@@ -250,7 +260,7 @@ class MyComponent extends React.Component {
             VoipPushNotification.onVoipNotificationCompleted(notification.uuid);
         });
 
-        // ===== Step 3: subscribe `didLoadWithEvents` event =====
+        // ===== Step 4: subscribe `didLoadWithEvents` event =====
         VoipPushNotification.addEventListener('didLoadWithEvents', (events) => {
             // --- this will fire when there are events occured before js bridge initialized
             // --- use this event to execute your event handler manually by event type
@@ -262,13 +272,15 @@ class MyComponent extends React.Component {
                 let { name, data } = voipPushEvent;
                 if (name === VoipPushNotification.RNVoipPushRemoteNotificationsRegisteredEvent) {
                     this.onVoipPushNotificationRegistered(data);
+                } else if (name === VoipPushNotification.RNVoipPushRemoteNotificationsInvalidatedEvent) {
+                    this.onVoipPushNotificationInvalidated(data);
                 } else if (name === VoipPushNotification.RNVoipPushRemoteNotificationReceivedEvent) {
                     this.onVoipPushNotificationiReceived(data);
                 }
             }
         });
 
-        // ===== Step 4: register =====
+        // ===== Step 5: register =====
         // --- it will be no-op if you have subscribed before (like in native side)
         // --- but will fire `register` event if we have latest cahced voip token ( it may be empty if no token at all )
         VoipPushNotification.registerVoipToken(); // --- register token
@@ -278,6 +290,7 @@ class MyComponent extends React.Component {
     componentWillUnmount() {
         VoipPushNotification.removeEventListener('didLoadWithEvents');
         VoipPushNotification.removeEventListener('register');
+        VoipPushNotification.removeEventListener('invalidate');
         VoipPushNotification.removeEventListener('notification');
     }
 ...

@@ -13,6 +13,7 @@ const _eventHandlers = new Map();
 
 // --- native unique event names
 const RNVoipPushRemoteNotificationsRegisteredEvent = "RNVoipPushRemoteNotificationsRegisteredEvent"; // --- 'register'
+const RNVoipPushRemoteNotificationsInvalidatedEvent = "RNVoipPushRemoteNotificationsInvalidatedEvent"; // --- 'invalidate'
 const RNVoipPushRemoteNotificationReceivedEvent = "RNVoipPushRemoteNotificationReceivedEvent"; // --- 'notification'
 const RNVoipPushDidLoadWithEvents = "RNVoipPushDidLoadWithEvents"; // --- 'didLoadWithEvents'
 
@@ -20,6 +21,10 @@ export default class RNVoipPushNotification {
 
     static get RNVoipPushRemoteNotificationsRegisteredEvent() {
         return RNVoipPushRemoteNotificationsRegisteredEvent;
+    }
+
+    static get RNVoipPushRemoteNotificationsInvalidatedEvent() {
+        return RNVoipPushRemoteNotificationsInvalidatedEvent;
     }
 
     static get RNVoipPushRemoteNotificationReceivedEvent() {
@@ -38,6 +43,7 @@ export default class RNVoipPushNotification {
      *
      * - `notification` : Fired when a remote notification is received.
      * - `register`: Fired when the user registers for remote notifications.
+     * - `invalidate`: Fired when PushKit invalidates the VoIP token. Payload: `{ token, type }`.
      * - `didLoadWithEvents`: Fired when the user have initially subscribed any listener and has cached events already.
      */
     static addEventListener(type, handler) {
@@ -54,6 +60,13 @@ export default class RNVoipPushNotification {
                 RNVoipPushRemoteNotificationsRegisteredEvent,
                 (deviceToken) => {
                     handler(deviceToken);
+                }
+            );
+        } else if (type === 'invalidate') {
+            listener = eventEmitter.addListener(
+                RNVoipPushRemoteNotificationsInvalidatedEvent,
+                (invalidation) => {
+                    handler(invalidation);
                 }
             );
         } else if (type === 'didLoadWithEvents') {

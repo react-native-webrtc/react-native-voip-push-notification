@@ -1,6 +1,7 @@
 declare module 'react-native-voip-push-notification' {
     export type NativeEvents = {
         register: 'RNVoipPushRemoteNotificationsRegisteredEvent';
+        invalidate: 'RNVoipPushRemoteNotificationsInvalidatedEvent';
         notification: 'RNVoipPushRemoteNotificationReceivedEvent';
         didLoadWithEvents: 'RNVoipPushDidLoadWithEvents';
     }
@@ -8,6 +9,7 @@ declare module 'react-native-voip-push-notification' {
     export type Events = keyof NativeEvents;
     export type EventsPayload = {
         register: string,
+        invalidate: { token: string, type: string },
         notification: object,
         didLoadWithEvents: Array<InitialEvent>,
     }
@@ -18,6 +20,7 @@ declare module 'react-native-voip-push-notification' {
 
     export default class RNVoipPushNotification {
         static RNVoipPushRemoteNotificationsRegisteredEvent: NativeEvents['register']
+        static RNVoipPushRemoteNotificationsInvalidatedEvent: NativeEvents['invalidate']
         static RNVoipPushRemoteNotificationReceivedEvent: NativeEvents['notification']
         static RNVoipPushDidLoadWithEvents: NativeEvents['didLoadWithEvents']
 
