@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		23D5120B1CC765E500845BEE /* RNVoipPushNotificationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 23D5120A1CC765E500845BEE /* RNVoipPushNotificationManager.m */; };
+		23D512131CC765E500845BEE /* RNVoipPushPayloadSerialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 23D512121CC765E500845BEE /* RNVoipPushPayloadSerialization.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -26,6 +27,8 @@
 		23D512051CC765E500845BEE /* libRNVoipPushNotification.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRNVoipPushNotification.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		23D512081CC765E500845BEE /* RNVoipPushNotificationManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNVoipPushNotificationManager.h; sourceTree = "<group>"; };
 		23D5120A1CC765E500845BEE /* RNVoipPushNotificationManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNVoipPushNotificationManager.m; sourceTree = "<group>"; };
+		23D512111CC765E500845BEE /* RNVoipPushPayloadSerialization.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNVoipPushPayloadSerialization.h; sourceTree = "<group>"; };
+		23D512121CC765E500845BEE /* RNVoipPushPayloadSerialization.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNVoipPushPayloadSerialization.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +63,8 @@
 			children = (
 				23D512081CC765E500845BEE /* RNVoipPushNotificationManager.h */,
 				23D5120A1CC765E500845BEE /* RNVoipPushNotificationManager.m */,
+				23D512111CC765E500845BEE /* RNVoipPushPayloadSerialization.h */,
+				23D512121CC765E500845BEE /* RNVoipPushPayloadSerialization.m */,
 			);
 			path = RNVoipPushNotification;
 			sourceTree = "<group>";
@@ -121,6 +126,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				23D5120B1CC765E500845BEE /* RNVoipPushNotificationManager.m in Sources */,
+				23D512131CC765E500845BEE /* RNVoipPushPayloadSerialization.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
